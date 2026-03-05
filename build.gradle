@@ -28,6 +28,8 @@ loom {
 		}
 	}
 
+	accessWidenerPath = file("src/main/resources/aprelics.accesswidener")
+
 }
 
 fabricApi {

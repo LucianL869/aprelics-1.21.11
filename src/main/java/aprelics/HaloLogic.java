@@ -12,8 +12,6 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.projectile.ProjectileUtil;
-import net.minecraft.world.item.Items;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.Vec3;
@@ -29,6 +27,7 @@ public class HaloLogic {
     public static void register() {
         net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents.END_SERVER_TICK.register(server -> {
             for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+                // Passive effects are only applied if the halo is equipped in the correct slot
                 if (player.getItemBySlot(EquipmentSlot.HEAD).is(ModItems.VERDANT_HALO)) {
                     applyPassiveEffects(player);
                     checkCooldownNotification(player);
@@ -59,22 +58,12 @@ public class HaloLogic {
     }
 
     public static void tryHeal(ServerPlayer player) {
-        int relicCount = 0;
-        for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
-            ItemStack stack = player.getInventory().getItem(i);
-            if (stack.is(ModItems.VERDANT_HALO) || stack.is(Items.OAK_BUTTON) || stack.is(Items.DIRT)) {
-                relicCount++;
-            }
-        }
-
-        if (relicCount > 1) {
-            player.hurt(player.damageSources().magic(), 2.0f);
-            player.displayClientMessage(Component.literal("§0[§4!§0] §cA Mere Mortal Cannot Control The Power Of More Than One Relic!"), true);
-            player.level().playSound(null, player.getX(), player.getY(), player.getZ(),
-                    SoundEvents.LIGHTNING_BOLT_THUNDER, SoundSource.PLAYERS, 0.5f, 2.0f);
+        // Centralized check for multi-relic punishment
+        if (!RelicUtil.canUseRelic(player)) {
             return;
         }
 
+        // Ensure the player is actually wearing the halo to use its ability
         if (!player.getItemBySlot(EquipmentSlot.HEAD).is(ModItems.VERDANT_HALO)) {
             return;
         }
@@ -98,7 +87,6 @@ public class HaloLogic {
             livingTarget.addEffect(new MobEffectInstance(MobEffects.REGENERATION, 120, 2));
             livingTarget.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, 200, 0));
 
-            // Use the ServerLevel directly from the player
             ServerLevel world = (ServerLevel) player.level();
             Vec3 start = player.getEyePosition();
             Vec3 end = livingTarget.getEyePosition();
@@ -137,14 +125,13 @@ public class HaloLogic {
         Vec3 reachVec = eyePos.add(viewVec.x * range, viewVec.y * range, viewVec.z * range);
         AABB searchBox = player.getBoundingBox().expandTowards(viewVec.scale(range)).inflate(1.0D);
 
-        // This version of the method is more flexible for "Raycasting" from a player
         EntityHitResult hitResult = ProjectileUtil.getEntityHitResult(
                 player,
                 eyePos,
                 reachVec,
                 searchBox,
                 (entity) -> !entity.isSpectator() && entity.isAlive() && entity.isPickable(),
-                range * range // This requires the square of the distance
+                range * range
         );
 
         return hitResult != null ? hitResult.getEntity() : null;

@@ -1,14 +1,12 @@
 {
 	"required": true,
-	"package": "aprelics.mixin",
+	"package": "aprelics.mixins",
 	"compatibilityLevel": "JAVA_21",
 	"mixins": [
-		"ExampleMixin"
+		"PlayerMixin",
+		"LivingEntityMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1
-	},
-	"overwrites": {
-		"requireAnnotations": true
 	}
 }
