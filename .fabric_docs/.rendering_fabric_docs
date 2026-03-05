@@ -1,0 +1,2159 @@
+Data Generation Setup
+What Is Data Generation?
+Data generation (or datagen) is an API for programmatically generating recipes, advancements, tags, item models, language files, loot tables, and basically anything JSON-based.
+
+Enabling Data Generation
+At Project Creation
+The easiest way to enable datagen is at project creation. Check the "Enable Data Generation" box when using the template generator.
+
+The checked "Data Generation" box on the template generator
+
+TIP
+
+If datagen is enabled, you should have a "Data Generation" run configuration and a runDatagen Gradle task.
+
+Manually
+First, we need to enable datagen in the build.gradle file.
+
+
+fabricApi {
+	configureDataGeneration() {
+		client = true
+	}
+}
+1
+2
+3
+4
+5
+Next, we need an entrypoint class. This is where our datagen starts. Place this somewhere in the client package - this example places it at src/client/java/com/example/docs/datagen/ExampleModDataGenerator.java.
+
+
+public class ExampleModDataGenerator implements DataGeneratorEntrypoint {
+	@Override
+	public void onInitializeDataGenerator(FabricDataGenerator fabricDataGenerator) {
+	}
+
+}
+1
+2
+3
+4
+5
+6
+Finally, we need to tell Fabric about the entrypoint in our fabric.mod.json:
+
+
+{
+  // ...
+  "entrypoints": {
+    // ...
+    "client": [
+      // ...
+    ],
+    "fabric-datagen": [
+      "com.example.docs.datagen.ExampleModDataGenerator"
+    ]
+  }
+}
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+WARNING
+
+Don't forget to add a comma (,) after the previous entrypoint block!
+
+Close and reopen IntelliJ to create a run configuration for datagen.
+
+Creating a Pack
+Inside your datagen entrypoint's onInitializeDataGenerator method, we need to create a Pack. Later, you'll add providers, which put generated data into this Pack.
+
+
+FabricDataGenerator.Pack pack = fabricDataGenerator.createPack();
+1
+Running Data Generation
+To run datagen, use the run configuration in your IDE, or run ./gradlew runDatagen in the console. The generated files will be created in src/main/generated.
+
+Next Steps
+Now that datagen is set up, we need to add providers. These are what generate the data to add to your Pack. The following pages outline how to do this.
+
+
+
+
+
+
+
+
+
+
+
+Translation Generation
+PREREQUISITES
+
+Make sure you've completed the datagen setup process first.
+
+Setup
+First, we'll make our provider. Remember, providers are what actually generate data for us. Create a class that extends FabricLanguageProvider and fill out the base methods:
+
+
+public class ExampleModEnglishLangProvider extends FabricLanguageProvider {
+	protected ExampleModEnglishLangProvider(FabricDataOutput dataOutput, CompletableFuture<HolderLookup.Provider> registryLookup) {
+		// Specifying en_us is optional, as it's the default language code
+		super(dataOutput, "en_us", registryLookup);
+	}
+
+	@Override
+	public void generateTranslations(HolderLookup.Provider holderLookup, TranslationBuilder translationBuilder) {
+	}
+}
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+TIP
+
+You will need a different provider for each language you want to generate (eg. one ExampleEnglishLangProvider and one ExamplePirateLangProvider).
+
+To finish setup, add this provider to your DataGeneratorEntrypoint within the onInitializeDataGenerator method.
+
+
+pack.addProvider(ExampleModEnglishLangProvider::new);
+1
+Creating Translations
+Along with creating raw translations, translations from Identifiers, and copying them from an already existing file (by passing a Path), there are helper methods for translating items, blocks, tags, stats, entities, status effects, creative tabs, entity attributes, and enchantments. Simply call add on the translationBuilder with what you want to translate and what it should translate to:
+
+
+translationBuilder.add("text.example-mod.greeting", "Hello there!");
+1
+Using Translations
+Generated translations take the place of a lot of translations added in other tutorials, but you can also use them anywhere you use a Component object. In our example, if we wanted to allow resource packs to translate our greeting, we use Component.translatable instead of Component.literal:
+
+
+ChatComponent chatHud = Minecraft.getInstance().gui.getChat();
+chatHud.addMessage(Component.literal("Hello there!"));
+chatHud.addMessage(Component.translatable("text.example-mod.greeting"));
+
+
+
+
+
+
+
+
+
+
+
+Block Model Generation
+PREREQUISITES
+
+Make sure you've completed the datagen setup process first.
+
+Setup
+First, we will need to create our ModelProvider. Create a class that extends FabricModelProvider. Implement both abstract methods: generateBlockStateModels and generateItemModels. Lastly, create a constructor matching super.
+
+
+public class ExampleModModelProvider extends FabricModelProvider {
+	public ExampleModModelProvider(FabricDataOutput output) {
+		super(output);
+	}
+
+	@Override
+	public void generateBlockStateModels(BlockModelGenerators blockStateModelGenerator) {
+	}
+
+	@Override
+	public void generateItemModels(ItemModelGenerators itemModelGenerator) {
+	}
+
+	@Override
+	public String getName() {
+		return "ExampleModModelProvider";
+	}
+}
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+Register this class in your DataGeneratorEntrypoint within the onInitializeDataGenerator method.
+
+
+pack.addProvider(ExampleModModelProvider::new);
+1
+Blockstates and Block Models
+
+@Override
+public void generateBlockStateModels(BlockStateModelGenerator blockStateModelGenerator) {
+}
+1
+2
+3
+For block models, we will primarily be focusing on the generateBlockStateModels method. Notice the parameter BlockStateModelGenerator blockStateModelGenerator - this object will be responsible for generating all the JSON files. Here are some handy examples you can use to generate your desired models:
+
+Simple Cube All
+
+blockStateModelGenerator.createTrivialCube(ModBlocks.STEEL_BLOCK);
+1
+This is the most commonly used function. It generates a JSON model file for a normal cube_all block model. One texture is used for all six sides, in this case we use steel_block.
+
+
+{
+  "parent": "minecraft:block/cube_all",
+  "textures": {
+    "all": "example-mod:block/steel_block"
+  }
+}
+1
+2
+3
+4
+5
+6
+It also generates a blockstate JSON file. Since we have no blockstate properties (e.g. Axis, Facing, ...), one variant is sufficient, and is used every time the block is placed.
+
+
+{
+  "variants": {
+    "": {
+      "model": "example-mod:block/steel_block"
+    }
+  }
+}
+1
+2
+3
+4
+5
+6
+7
+
+Download Steel Block Texture
+Singletons
+The registerSingleton method provides JSON model files based on the TexturedModel you pass in and a single blockstate variant.
+
+
+blockStateModelGenerator.createTrivialBlock(ModBlocks.PIPE_BLOCK, TexturedModel.COLUMN_ALT);
+1
+This method will generate models for a normal cube, that uses the texture file pipe_block for the sides and the texture file pipe_block_top for the top and bottom sides.
+
+
+{
+  "parent": "minecraft:block/cube_column",
+  "textures": {
+    "end": "example-mod:block/pipe_block_top",
+    "side": "example-mod:block/pipe_block"
+  }
+}
+1
+2
+3
+4
+5
+6
+7
+TIP
+
+If you're stuck choosing which TextureModel you should use, open the TexturedModel class and look at the TextureMappings!
+
+
+Download Pipe Block Textures
+Block Texture Pool
+
+blockStateModelGenerator.family(ModBlocks.RUBY_BLOCK)
+		.stairs(ModBlocks.RUBY_STAIRS)
+		.slab(ModBlocks.RUBY_SLAB)
+		.fence(ModBlocks.RUBY_FENCE);
+1
+2
+3
+4
+Another useful method is registerCubeAllModelTexturePool: define the textures by passing in the "base block", and then append the "children", which will have the same textures. In this case, we passed in the RUBY_BLOCK, so the stairs, slab and fence will use the RUBY_BLOCK texture.
+
+WARNING
+
+It will also generate a simple cube all JSON model for the "base block" to ensure that it has a block model.
+
+Be aware of this, if you're changing block model of this particular block, as it will result in en error.
+
+You can also append a BlockFamily, which will generate models for all of its "children".
+
+
+public static final BlockFamily RUBY_FAMILY =
+		new BlockFamily.Builder(ModBlocks.RUBY_BLOCK)
+		.stairs(ModBlocks.RUBY_STAIRS)
+		.slab(ModBlocks.RUBY_SLAB)
+		.fence(ModBlocks.RUBY_FENCE)
+		.getFamily();
+1
+2
+3
+4
+5
+6
+
+blockStateModelGenerator.family(ModBlocks.RUBY_BLOCK).generateFor(ModBlocks.RUBY_FAMILY);
+1
+
+Download Ruby Block Texture
+Doors and Trapdoors
+
+blockStateModelGenerator.createDoor(ModBlocks.RUBY_DOOR);
+blockStateModelGenerator.createTrapdoor(ModBlocks.RUBY_TRAPDOOR);
+// blockStateModelGenerator.registerOrientableTrapdoor(ModBlocks.RUBY_TRAPDOOR);
+1
+2
+3
+Doors and trapdoors are a little different. Here, you have to make three new textures - two for the door, and one for the trapdoor.
+
+The door:
+It has two parts - the upper half and the lower half. Each needs its own texture: in this case ruby_door_top for the upper half and ruby_door_bottom for the lower.
+The registerDoor() method will create models for all orientations of the door, both open and closed.
+You also need an item texture! Put it in assets/example-mod/textures/item/ folder.
+The trapdoor:
+Here, you need only one texture, in this case named ruby_trapdoor. It will be used for all sides.
+Since TrapdoorBlock has a FACING property, you can use the commented out method to generate model files with rotated textures = the trapdoor will be "orientable". Otherwise, it will look the same no matter the direction it's facing.
+
+Download Ruby Door and Trapdoor Textures
+Custom Block Models
+In this section, we'll create the models for a Vertical Oak Log Slab, with Oak Log textures.
+
+All fields and methods for this part of the tutorial are declared in a static inner class called CustomBlockStateModelGenerator.
+
+Custom Block Class
+Create a VerticalSlab block with a FACING property and a SINGLE boolean property, like in the Block States tutorial. SINGLE will indicate if there are both slabs. Then you should override getOutlineShape and getCollisionShape, so that the outline is rendered correctly, and the block has the correct collision shape.
+
+
+public static final VoxelShape NORTH_SHAPE = Block.box(0.0, 0.0, 0.0, 16.0, 16.0, 8.0);
+public static final VoxelShape SOUTH_SHAPE = Block.box(0.0, 0.0, 8.0, 16.0, 16.0, 16.0);
+public static final VoxelShape WEST_SHAPE = Block.box(0.0, 0.0, 0.0, 8.0, 16.0, 16.0);
+public static final VoxelShape EAST_SHAPE = Block.box(8.0, 0.0, 0.0, 16.0, 16.0, 16.0);
+1
+2
+3
+4
+
+@Override
+protected VoxelShape getBlockSupportShape(BlockState state, BlockGetter level, BlockPos pos) {
+	boolean type = state.getValue(SINGLE);
+	Direction direction = state.getValue(FACING);
+	VoxelShape voxelShape;
+
+	if (type) {
+		switch (direction) {
+			case WEST -> voxelShape = WEST_SHAPE.singleEncompassing();
+			case EAST -> voxelShape = EAST_SHAPE.singleEncompassing();
+			case SOUTH -> voxelShape = SOUTH_SHAPE.singleEncompassing();
+			case NORTH -> voxelShape = NORTH_SHAPE.singleEncompassing();
+			default -> throw new MatchException(null, null);
+		}
+
+		return voxelShape;
+	} else {
+		return Shapes.block();
+	}
+}
+
+@Override
+protected VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
+	return this.getBlockSupportShape(state, level, pos);
+}
+
+@Override
+protected VoxelShape getCollisionShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
+	return this.getBlockSupportShape(state, level, pos);
+}
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+Also override the canReplace() method, otherwise you couldn't make the slab a full block.
+
+
+@Override
+protected boolean canBeReplaced(BlockState state, BlockPlaceContext context) {
+	Direction direction = state.getValue(FACING);
+
+	if (context.getItemInHand().is(this.asItem()) && state.getValue(SINGLE)) {
+		if (context.replacingClickedOnBlock()) {
+			return context.getClickedFace().getOpposite() == direction;
+		}
+	}
+
+	return false;
+}
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+And you're done! You can now test the block out and place it in game.
+
+Parent Block Model
+Now, let's create a parent block model. It will determine the size, position in hand or other slots and the x and y coordinates of the texture. It's recommended to use an editor such as Blockbench for this, as making it manually is a really tedious process. It should look something like this:
+
+
+{
+  "parent": "minecraft:block/block",
+  "textures": {
+    "particle": "#side"
+  },
+  "display": {
+    "gui": {
+      "rotation": [30, -135, 0],
+      "translation": [-1.5, 0.75, 0],
+      "scale": [0.625, 0.625, 0.625]
+    },
+    "firstperson_righthand": {
+      "rotation": [0, -45, 0],
+      "translation": [0, 2, 0],
+      "scale": [0.375, 0.375, 0.375]
+    },
+    "firstperson_lefthand": {
+      "rotation": [0, 315, 0],
+      "translation": [0, 2, 0],
+      "scale": [0.375, 0.375, 0.375]
+    },
+    "thirdperson_righthand": {
+      "rotation": [75, -45, 0],
+      "translation": [0, 0, 2],
+      "scale": [0.375, 0.375, 0.375]
+    },
+    "thirdperson_lefthand": {
+      "rotation": [75, 315, 0],
+      "translation": [0, 0, 2],
+      "scale": [0.375, 0.375, 0.375]
+    }
+  },
+  "elements": [
+    {
+      "from": [0, 0, 0],
+      "to": [16, 16, 8],
+      "faces": {
+        "down": {
+          "uv": [0, 8, 16, 16],
+          "texture": "#bottom",
+          "cullface": "down",
+          "tintindex": 0
+        },
+        "up": {
+          "uv": [0, 0, 16, 8],
+          "texture": "#top",
+          "cullface": "up",
+          "tintindex": 0
+        },
+        "north": {
+          "uv": [0, 0, 16, 16],
+          "texture": "#side",
+          "cullface": "north",
+          "tintindex": 0
+        },
+        "south": {
+          "uv": [0, 0, 16, 16],
+          "texture": "#side",
+          "tintindex": 0
+        },
+        "west": {
+          "uv": [0, 0, 8, 16],
+          "texture": "#side",
+          "cullface": "west",
+          "tintindex": 0
+        },
+        "east": {
+          "uv": [8, 0, 16, 16],
+          "texture": "#side",
+          "cullface": "east",
+          "tintindex": 0
+        }
+      }
+    }
+  ]
+}
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+62
+63
+64
+65
+66
+67
+68
+69
+70
+71
+72
+73
+74
+75
+76
+See how blockstates are formatted for more information. Notice the #bottom, #top, #side keywords. They act as variables that can be set by models that have this one as a parent:
+
+
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "bottom": "minecraft:block/sandstone_bottom",
+    "side": "minecraft:block/sandstone",
+    "top": "minecraft:block/sandstone_top"
+  }
+}
+1
+2
+3
+4
+5
+6
+7
+8
+The bottom value will replace the #bottom placeholder and so on. Put it in the resources/assets/example-mod/models/block/ folder.
+
+Custom Model
+Another thing we will need is an instance of the Model class. It will represent the actual parent block model inside our mod.
+
+
+public static final ModelTemplate VERTICAL_SLAB = block("vertical_slab", TextureSlot.BOTTOM, TextureSlot.TOP, TextureSlot.SIDE);
+
+//helper method for creating Models
+private static ModelTemplate block(String parent, TextureSlot... requiredTextureKeys) {
+	return new ModelTemplate(Optional.of(Identifier.fromNamespaceAndPath(ExampleMod.MOD_ID, "block/" + parent)), Optional.empty(), requiredTextureKeys);
+}
+
+//helper method for creating Models with variants
+private static ModelTemplate block(String parent, String variant, TextureSlot... requiredTextureKeys) {
+	return new ModelTemplate(Optional.of(Identifier.fromNamespaceAndPath(ExampleMod.MOD_ID, "block/" + parent)), Optional.of(variant), requiredTextureKeys);
+}
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+The block() method creates a new Model, pointing to the vertical_slab.json file inside the resources/assets/example-mod/models/block/ folder. The TextureSlots represent the "placeholders" (#bottom, #top, ...) as an Object.
+
+Using Texture Map
+What does TextureMapping do? It actually provides the identifiers that point to the textures. It technically behaves like a normal map - you associate a TextureSlot (key) with an Identifier (value).
+
+You can either use the vanilla ones, like TextureMapping.cube()(which associates all TextureSlots with the same Identifier), or create a new one, by creating a new instance and then using .put() to associate keys with values.
+
+TIP
+
+TextureMapping.cube() associates all TextureSlots with the same Identifier, no matter how many of them there are!
+
+Since we want to use the Oak Log textures, but have the BOTTOM, TOP and SIDE TextureSlots, we need to create a new one.
+
+
+public static TextureMapping blockAndTopForEnds(Block block) {
+	return new TextureMapping()
+			.put(TextureSlot.TOP, ModelLocationUtils.getModelLocation(block, "_top"))
+			.put(TextureSlot.BOTTOM, ModelLocationUtils.getModelLocation(block, "_top"))
+			.put(TextureSlot.SIDE, ModelLocationUtils.getModelLocation(block));
+}
+1
+2
+3
+4
+5
+6
+7
+The bottom and top faces will use oak_log_top.png, the sides will use oak_log.png.
+
+WARNING
+
+All TextureSlots in the TextureMapping have to match all TextureSlots in your parent block model!
+
+Custom BlockModelDefinitionGenerator Method
+The BlockModelDefinitionGenerator contains all blockstate variants, their rotation, and other options like UV lock.
+
+
+private static BlockModelDefinitionGenerator createVerticalSlabBlockStates(Block vertSlabBlock, Identifier vertSlabId, Identifier fullBlockId) {
+	MultiVariant vertSlabModel = BlockModelGenerators.plainVariant(vertSlabId);
+	MultiVariant fullBlockModel = BlockModelGenerators.plainVariant(fullBlockId);
+	return MultiVariantGenerator.dispatch(vertSlabBlock)
+			.with(PropertyDispatch.initial(VerticalSlabBlock.FACING, VerticalSlabBlock.SINGLE)
+				.select(Direction.NORTH, true, vertSlabModel.with(BlockModelGenerators.UV_LOCK))
+				.select(Direction.EAST, true, vertSlabModel.with(BlockModelGenerators.UV_LOCK).with(BlockModelGenerators.Y_ROT_90))
+				.select(Direction.SOUTH, true, vertSlabModel.with(BlockModelGenerators.UV_LOCK).with(BlockModelGenerators.Y_ROT_180))
+				.select(Direction.WEST, true, vertSlabModel.with(BlockModelGenerators.UV_LOCK).with(BlockModelGenerators.Y_ROT_270))
+				.select(Direction.NORTH, false, fullBlockModel.with(BlockModelGenerators.UV_LOCK))
+				.select(Direction.EAST, false, fullBlockModel.with(BlockModelGenerators.UV_LOCK))
+				.select(Direction.SOUTH, false, fullBlockModel.with(BlockModelGenerators.UV_LOCK))
+				.select(Direction.WEST, false, fullBlockModel.with(BlockModelGenerators.UV_LOCK))
+			);
+}
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+First, we create a new BlockModelDefinitionGenerator using MultiVariantGenerator.dispatch(). Then we create a new PropertyDispatch that contains parameters for all variants of the block, in this case FACING and SINGLE, and pass it into the MultiVariantGenerator. Specify which model and which transformations (uvlock, rotation) are used when using .register(). For example:
+
+Line 6: single slab facing north, so we'll use the model without rotation
+Line 9: single slab facing west, so we'll rotate the model on the Y axis by 270°
+Lines 10-13: non-single slab, which looks like a full block and we don't have to rotate it
+Custom Datagen Method
+The last step - creating an actual method you can call and that will generate the JSONs. But what are the parameters for?
+
+BlockModelGenerators generator, the same one that got passed into generateBlockStateModels.
+Block vertSlabBlock is the block to which we will generate the JSONs.
+Block fullBlock - is the model used when the SINGLE property is false = the slab block looks like a full block.
+TextureMapping textures defines the actual textures the model uses. See the Using Texture Map chapter.
+
+public static void registerVerticalSlab(BlockModelGenerators generator, Block vertSlabBlock, Block fullBlock, TextureMapping textures) {
+	Identifier slabModel = VERTICAL_SLAB.create(vertSlabBlock, textures, generator.modelOutput);
+	Identifier fullBlockModel = ModelLocationUtils.getModelLocation(fullBlock);
+	generator.blockStateOutput.accept(createVerticalSlabBlockStates(vertSlabBlock, slabModel, fullBlockModel));
+	generator.registerSimpleItemModel(vertSlabBlock, slabModel);
+}
+1
+2
+3
+4
+5
+6
+7
+First, we get the Identifier of the single slab model with VERTICAL_SLAB.create(). Then, we get the Identifier of the full block model with ModelLocationUtils.getModelLocation().
+
+We then pass those two models into createVerticalSlabBlockStates, which itself is passed into the blockStateOutput consumer, which generates the JSON files for the models.
+
+Finally, we create a model for the vertical slab item with BlockModelGenerators.registerSimpleItemModel().
+
+And that is all! Now all that's left to do is to call our method in our ModelProvider:
+
+
+CustomBlockStateModelGenerator.registerVerticalSlab(
+		blockStateModelGenerator,
+		ModBlocks.VERTICAL_OAK_LOG_SLAB,
+		Blocks.OAK_LOG,
+		CustomBlockStateModelGenerator.blockAndTopForEnds(Blocks.OAK_LOG)
+);
+
+
+
+
+
+
+
+
+
+
+
+Item Model Generation
+PREREQUISITES
+
+Make sure you've completed the datagen setup and created your first item.
+
+For each item model we want to generate, we must create two separate JSON files:
+
+An item model, which defines the textures, rotation and overall look of the item. It goes in the generated/assets/example-mod/models/item directory.
+A client item, which defines which model should be used based on various criteria, such as components, interactions and more. It goes in the generated/assets/example-mod/items directory.
+Setup
+First, we will need to create our model provider.
+
+TIP
+
+You can reuse the FabricModelProvider created in Block Model Generation.
+
+Create a class that extends FabricModelProvider, and implement both abstract methods: generateBlockStateModels and generateItemModels. Then, create a constructor matching super.
+
+
+public class ExampleModModelProvider extends FabricModelProvider {
+	public ExampleModModelProvider(FabricDataOutput output) {
+		super(output);
+	}
+
+	@Override
+	public void generateBlockStateModels(BlockModelGenerators blockStateModelGenerator) {
+	}
+
+	@Override
+	public void generateItemModels(ItemModelGenerators itemModelGenerator) {
+	}
+
+	@Override
+	public String getName() {
+		return "ExampleModModelProvider";
+	}
+}
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+Register this class in your DataGeneratorEntrypoint within the onInitializeDataGenerator method.
+
+
+pack.addProvider(ExampleModModelProvider::new);
+1
+Built-In Item Models
+For item models, we will be using the generateItemModels method. Its parameter ItemModelGenerators itemModelGenerator is responsible for generating the item models and also contains methods for doing so.
+
+Here's a reference of the most commonly used item model generator methods.
+
+Simple
+Simple item models are the default, and they're what most Minecraft items use. Their parent model is GENERATED. They use their 2D texture in the inventory, and are rendered in 3D in-game. An example would be boats, candles or dyes.
+
+Source CodeClient ItemItem ModelTexture
+
+itemModelGenerator.generateFlatItem(ModItems.RUBY, ModelTemplates.FLAT_ITEM);
+1
+Handheld
+Handheld item models are generally used by tools and weapons (axes, swords, trident). They are rotated and positioned a little differently from the simple models to look more natural in hand.
+
+Source CodeClient ItemItem ModelTexture
+
+itemModelGenerator.generateFlatItem(ModItems.GUIDITE_AXE, ModelTemplates.FLAT_HANDHELD_ITEM);
+1
+Dyeable
+The method for dyeable items generates a simple item model and a client item which specifies the tint color. This method requires a default decimal color value, which is used when the item is not dyed. The default value for leather is 0xFFA06540.
+
+Source CodeClient ItemItem ModelTexturePreview
+
+itemModelGenerator.generateDyedItem(ModItems.LEATHER_GLOVES, 0xFFA06540);
+1
+IMPORTANT
+
+You have to add your item to the ItemTags.DYEABLE tag to be able to dye it in your inventory!
+
+Conditional
+Next, we'll look into generating item models that change their visual based when a specific condition, indicated by the second parameter BooleanProperty, is met. Here are some of them:
+
+Property	Description
+IsKeybindDown	True when a specified key is pressed.
+IsUsingItem	True when the item is being used (e.g. when blocking with a shield).
+Broken	True when the item has 0 durability (e.g. elytra changes texture when broken).
+HasComponent	True when the item has a certain component.
+The third and fourth parameters are the models to be used when the property is true or false, respectively.
+
+Source CodeClient ItemItem ModelsTexturesPreview
+
+itemModelGenerator.generateBooleanDispatch(
+				ModItems.FLASHLIGHT,
+				ItemModelUtils.isUsingItem(),
+				ItemModelUtils.plainModel(itemModelGenerator.createFlatItemModel(ModItems.FLASHLIGHT, "_lit", ModelTemplates.FLAT_ITEM)),
+				ItemModelUtils.plainModel(itemModelGenerator.createFlatItemModel(ModItems.FLASHLIGHT, ModelTemplates.FLAT_ITEM))
+);
+1
+2
+3
+4
+5
+6
+IMPORTANT
+
+To obtain the Identifier that is passed in ItemModelUtils.plainModel(), always use itemModelGenerator.createFlatItemModel(), otherwise only the client items will be generated, not the item models!
+
+Composite
+Composite item models are composed of one or more textures layered on top of each other. There aren't any vanilla methods for this; you have to use the itemModelGenerator's itemModelOutput field, and call accept() on it.
+
+Source CodeClient ItemItem ModelsTextures
+
+ItemModel.Unbaked hoe = ItemModelUtils.plainModel(itemModelGenerator.createFlatItemModel(ModItems.ENHANCED_HOE, ModelTemplates.FLAT_ITEM));
+ItemModel.Unbaked hoePlus = ItemModelUtils.plainModel(itemModelGenerator.createFlatItemModel(ModItems.ENHANCED_HOE, "_plus", ModelTemplates.FLAT_ITEM));
+
+itemModelGenerator.itemModelOutput.accept(
+				ModItems.ENHANCED_HOE,
+				ItemModelUtils.composite(hoe, hoePlus)
+);
+1
+2
+3
+4
+5
+6
+7
+Select
+Renders an item model based on the value of a specific property. These are some of them:
+
+Property	Description
+ContextDimension	Renders an item model based on the dimension in which the player is (Overworld, Nether, End).
+MainHand	Renders an item model when the item is equipped in player's main hand.
+DisplayContext	Renders an item model based on where the item is (ground, fixed, head, ...).
+ContextEntityType	Renders an item model based on the entity holding the item.
+In this example, the item changes texture when traveling between dimensions: it's green in the Overworld, red in the Nether, and black in the End.
+
+Source CodeClient ItemItem ModelsTexturesPreview
+
+ItemModel.Unbaked crystalOverworld = ItemModelUtils.plainModel(itemModelGenerator.createFlatItemModel(ModItems.DIMENSIONAL_CRYSTAL, "_overworld", ModelTemplates.FLAT_ITEM));
+ItemModel.Unbaked crystalNether = ItemModelUtils.plainModel(itemModelGenerator.createFlatItemModel(ModItems.DIMENSIONAL_CRYSTAL, "_nether", ModelTemplates.FLAT_ITEM));
+ItemModel.Unbaked crystalEnd = ItemModelUtils.plainModel(itemModelGenerator.createFlatItemModel(ModItems.DIMENSIONAL_CRYSTAL, "_end", ModelTemplates.FLAT_ITEM));
+
+itemModelGenerator.itemModelOutput.accept(
+				ModItems.DIMENSIONAL_CRYSTAL,
+				ItemModelUtils.select(new ContextDimension(),
+								ItemModelUtils.when(Level.OVERWORLD, crystalOverworld),
+								ItemModelUtils.when(Level.NETHER, crystalNether),
+								ItemModelUtils.when(Level.END, crystalEnd)
+				)
+);
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+Range Dispatch
+Renders an item model based on the value of a numeric property. Takes in an item and list of variants, each paired with a value. Examples include the compass, the bow, and the brush.
+
+There are quite a few supported properties, here are some examples:
+
+Property	Description
+Cooldown	Renders an item model based on the item's remaining cooldown.
+Count	Renders an item model based on the stack size.
+UseDuration	Renders an item model based on how long the item is being used.
+Damage	Renders an item model based on attack damage (minecraft:damage component).
+This example uses the Count, changing the texture from one knife up to three based on the stack size.
+
+Source CodeClient ItemItem ModelsTexturesPreview
+
+ItemModel.Unbaked knifeOne = ItemModelUtils.plainModel(itemModelGenerator.createFlatItemModel(ModItems.THROWING_KNIVES, "_one", ModelTemplates.FLAT_ITEM));
+ItemModel.Unbaked knifeTwo = ItemModelUtils.plainModel(itemModelGenerator.createFlatItemModel(ModItems.THROWING_KNIVES, "_two", ModelTemplates.FLAT_ITEM));
+ItemModel.Unbaked knifeThree = ItemModelUtils.plainModel(itemModelGenerator.createFlatItemModel(ModItems.THROWING_KNIVES, "_three", ModelTemplates.FLAT_ITEM));
+
+itemModelGenerator.itemModelOutput.accept(
+				ModItems.THROWING_KNIVES,
+				ItemModelUtils.rangeSelect(
+								new Count(false),
+								List.of(
+												ItemModelUtils.override(knifeOne, 1.0F),
+												ItemModelUtils.override(knifeTwo, 2.0F),
+												ItemModelUtils.override(knifeThree, 3.0F)
+								)
+				)
+);
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+Custom Item Models
+Generating item models doesn't have to be done with vanilla methods only; you can, of course, create your own. In this section, we will create a custom model for a balloon item.
+
+All fields and methods for this part of the tutorial are declared in a static inner class called CustomItemModelGenerator.
+
+Creating a Custom Parent
+First, let's create a parent item model that defines how the item looks in-game. Let's say we want the balloon to look like simple item models, but scaled up.
+
+To do this, we'll create resources/assets/example-mod/models/item/scaled2x.json, set the parent to be the item/generated model, and then override the scaling.
+
+
+{
+  "parent": "item/generated",
+  "display": {
+    "ground": {
+      "rotation": [0, 0, 0],
+      "translation": [0, 2, 0],
+      "scale": [1, 1, 1]
+    },
+    "head": {
+      "rotation": [0, 180, 0],
+      "translation": [0, 13, 7],
+      "scale": [2, 2, 2]
+    },
+    "thirdperson_righthand": {
+      "rotation": [0, 0, 0],
+      "translation": [0, 3, 1],
+      "scale": [1.1, 1.1, 1.1]
+    },
+    "firstperson_righthand": {
+      "rotation": [0, -90, 25],
+      "translation": [1.13, 3.2, 1.13],
+      "scale": [1.36, 1.36, 1.36]
+    }
+  }
+}
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+This will make the model visually twice as big as the simple ones.
+
+Creating the ModelTemplate
+Next, we need to create an instance of the ModelTemplate class. It will represent the actual parent item model inside our mod.
+
+
+public static final ModelTemplate SCALED2X = item("scaled2x", TextureSlot.LAYER0);
+
+private static ModelTemplate item(String parent, TextureSlot requiredTextureKeys) {
+	return new ModelTemplate(Optional.of(Identifier.fromNamespaceAndPath(ExampleMod.MOD_ID, "item/" + parent)), Optional.empty(), requiredTextureKeys);
+}
+1
+2
+3
+4
+5
+6
+The item() method creates a new ModelTemplate instance, pointing to the scaled2x.json file we created earlier.
+
+TextureSlot LAYER0 represents the #layer0 texture variable, which will then be replaced by an identifier pointing to a texture.
+
+Adding a Custom Datagen Method
+The last step is creating a custom method, which will be called in the generateItemModels() method and will be responsible for generating our item models.
+
+
+public static void registerScaled2x(Item item, ItemModelGenerators generator) {
+	Identifier itemModel = SCALED2X.create(item, TextureMapping.singleSlot(TextureSlot.LAYER0, ModelLocationUtils.getModelLocation(item)), generator.modelOutput);
+	generator.itemModelOutput.accept(item, ItemModelUtils.plainModel(itemModel));
+}
+1
+2
+3
+4
+5
+Let's go over what the parameters are for:
+
+Item item: The item, for which we are generating the models.
+ItemModelGenerators generator: the same that get passed into the generateItemModels() method. Used for its fields.
+First, we get the Identifier of the item with SCALED2X.create(), passing in a TextureMapping and the modelOutput from our generator parameter.
+
+Then, we'll use another of its fields, the itemModelOutput (which essentially works as a consumer), and use the accept() method, so that the models are actually generated.
+
+Calling the Custom Method
+Now, we only need to call our method in the generateItemModels() method.
+
+
+CustomItemModelGenerator.registerScaled2x(ModItems.BALLOON, itemModelGenerator);
+1
+Don't forget to add a texture file!
+
+
+
+
+
+
+
+
+
+
+
+Tag Generation
+PREREQUISITES
+
+Make sure you've completed the datagen setup process first.
+
+Setup
+Here we'll show how to create Item tags, but the same principle applies for other things.
+
+Fabric provides several helper tag providers including one for items; FabricTagProvider.ItemTagProvider. We will use this helper class for this example.
+
+You can create your own class that extends FabricTagProvider<T>, where T is the type of thing you'd like to provide a tag for. This is your provider.
+
+Let your IDE fill in the required code, then replace the resourceKey constructor parameter with the ResourceKey for your type:
+
+
+public class ExampleModItemTagProvider extends FabricTagProvider.ItemTagProvider {
+	public ExampleModItemTagProvider(FabricDataOutput output, CompletableFuture<HolderLookup.Provider> registriesFuture) {
+		super(output, registriesFuture);
+	}
+
+	@Override
+	protected void addTags(HolderLookup.Provider wrapperLookup) {
+	}
+}
+1
+2
+3
+4
+5
+6
+7
+8
+9
+TIP
+
+You will need a different provider for each type of tag (eg. one FabricTagProvider<EntityType<?>> and one FabricTagProvider<Item>).
+
+To finish setup, add this provider to your DataGeneratorEntrypoint within the onInitializeDataGenerator method.
+
+
+pack.addProvider(ExampleModItemTagProvider::new);
+1
+Creating a Tag
+Now that you've created a provider, let's add a tag to it. First, create a TagKey<T>:
+
+
+public static final TagKey<Item> SMELLY_ITEMS = TagKey.create(Registries.ITEM, Identifier.fromNamespaceAndPath(ExampleMod.MOD_ID, "smelly_items"));
+1
+Next, call valueLookupBuilder inside your provider's configure method. From there, you can add individual items, add other tags, or make this tag replace pre-existing tags.
+
+If you want to add a tag, use addOptionalTag, as the tag's contents may not be loaded during datagen. If you are certain the tag is loaded, call addTag.
+
+To forcefully add a tag and ignore the broken format, use forceAddTag.
+
+
+valueLookupBuilder(SMELLY_ITEMS)
+		.add(Items.SLIME_BALL)
+		.add(Items.ROTTEN_FLESH)
+		.addOptionalTag(ItemTags.DIRT)
+		.add(Items.OAK_PLANKS)
+		.forceAddTag(ItemTags.BANNERS)
+		.setReplace(true);
+
+
+
+
+
+
+
+
+
+
+
+
+Advancement Generation
+PREREQUISITES
+
+Make sure you've completed the datagen setup process first.
+
+Setup
+First, we need to make our provider. Create a class that extends FabricAdvancementProvider and fill out the base methods:
+
+
+public class ExampleModAdvancementProvider extends FabricAdvancementProvider {
+	protected ExampleModAdvancementProvider(FabricDataOutput output, CompletableFuture<HolderLookup.Provider> registryLookup) {
+		super(output, registryLookup);
+	}
+
+	@Override
+	public void generateAdvancement(HolderLookup.Provider wrapperLookup, Consumer<AdvancementHolder> consumer) {
+	}
+}
+1
+2
+3
+4
+5
+6
+7
+8
+9
+To finish setup, add this provider to your DataGeneratorEntrypoint within the onInitializeDataGenerator method.
+
+
+pack.addProvider(ExampleModAdvancementProvider::new);
+1
+Advancement Structure
+An advancement is made up a few different components. Along with the requirements, called "criterion," it may have:
+
+Some DisplayInfo that tell the game how to show the advancement to players,
+AdvancementRequirements, which are lists of lists of criteria, requiring at least one criterion from each sub-list to be completed,
+AdvancementRewards, which the player receives for completing the advancement.
+A Strategy, which tells the advancement how to handle multiple criterion, and
+A parent Advancement, which organizes the hierarchy you see on the "Advancements" screen.
+Simple Advancements
+Here's a simple advancement for getting a dirt block:
+
+
+AdvancementHolder getDirt = Advancement.Builder.advancement()
+		.display(
+				Items.DIRT, // The display icon
+				Component.literal("Your First Dirt Block"), // The title
+				Component.literal("Now make a house from it"), // The description
+				Identifier.withDefaultNamespace("textures/gui/advancements/backgrounds/adventure.png"), // Background image for the tab in the advancements page, if this is a root advancement (has no parent)
+				AdvancementType.TASK, // TASK, CHALLENGE, or GOAL
+				true, // Show the toast when completing it
+				true, // Announce it to chat
+				false // Hide it in the advancement tab until it's achieved
+		)
+		// "got_dirt" is the name referenced by other advancements when they want to have "requirements."
+		.addCriterion("got_dirt", InventoryChangeTrigger.TriggerInstance.hasItems(Items.DIRT))
+		// Give the advancement an id
+		.save(consumer, ExampleMod.MOD_ID + ":get_dirt");
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+WARNING
+
+When building your advancement entries, remember that the function accepts the Identifier of the advancement in String format!
+
+One More Example
+Just to get the hang of it, let's add one more advancement. We'll practice adding rewards, using multiple criterion, and assigning parents:
+
+
+final HolderLookup.RegistryLookup<Item> itemLookup = wrapperLookup.lookupOrThrow(Registries.ITEM);
+AdvancementHolder appleAndBeef = Advancement.Builder.advancement()
+		.parent(getDirt)
+		.display(
+				Items.APPLE,
+				Component.literal("Apple and Beef"),
+				Component.literal("Ate an apple and beef"),
+				null, // Children don't need a background, the root advancement takes care of that
+				AdvancementType.CHALLENGE,
+				true,
+				true,
+				false
+		)
+		.addCriterion("ate_apple", ConsumeItemTrigger.TriggerInstance.usedItem(itemLookup, Items.APPLE))
+		.addCriterion("ate_cooked_beef", ConsumeItemTrigger.TriggerInstance.usedItem(itemLookup, Items.COOKED_BEEF))
+		.save(consumer, ExampleMod.MOD_ID + ":apple_and_beef");
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+Custom Criteria
+WARNING
+
+While datagen can be on the client side, Criterions and Predicates are in the main source set (both sides), since the server needs to trigger and evaluate them.
+
+Definitions
+A criterion (plural: criteria) is something a player can do (or that can happen to a player) that may be counted towards an advancement. The game comes with many criteria, which can be found in the net.minecraft.advancements.criterion package. Generally, you'll only need a new criterion if you implement a custom mechanic into the game.
+
+Conditions are evaluated by criteria. A criterion is only counted if all the relevant conditions are met. Conditions are usually expressed with a predicate.
+
+A predicate is something that takes a value and returns a boolean. For example, a Predicate<Item> might return true if the item is a diamond, while a Predicate<LivingEntity> might return true if the entity is not hostile to villagers.
+
+Creating Custom Criteria
+First, we'll need a new mechanic to implement. Let's tell the player what tool they used every time they break a block.
+
+
+public class ExampleModDatagenAdvancement implements ModInitializer {
+	@Override
+	public void onInitialize() {
+		HashMap<Item, Integer> tools = new HashMap<>();
+
+		PlayerBlockBreakEvents.AFTER.register(((level, player, blockPos, blockState, blockEntity) -> {
+			if (player instanceof ServerPlayer serverPlayer) { // Only triggers on the server side
+				Item item = player.getMainHandItem().getItem();
+
+				Integer usedCount = tools.getOrDefault(item, 0);
+				usedCount++;
+				tools.put(item, usedCount);
+
+				serverPlayer.sendSystemMessage(Component.nullToEmpty("You've used \"" + item + "\" as a tool " + usedCount + " times!"));
+			}
+		}));
+	}
+}
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+Note that this code is really bad. The HashMap is not stored anywhere persistent, so it will be reset every time the game is restarted. It's just to show off Criterions. Start the game and try it out!
+
+Next, let's create our custom criterion, UseToolCriterion. It's going to need its own Conditions class to go with it, so we'll make them both at once:
+
+
+public class UseToolCriterion extends SimpleCriterionTrigger<UseToolCriterion.Conditions> {
+
+	@Override
+	public Codec<Conditions> codec() {
+		return Conditions.CODEC;
+	}
+
+	public record Conditions(Optional<ContextAwarePredicate> playerPredicate) implements SimpleCriterionTrigger.SimpleInstance {
+		public static Codec<UseToolCriterion.Conditions> CODEC = ContextAwarePredicate.CODEC.optionalFieldOf("player")
+				.xmap(Conditions::new, Conditions::player).codec();
+
+		@Override
+		public Optional<ContextAwarePredicate> player() {
+			return playerPredicate;
+		}
+
+	}
+}
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+Whew, that's a lot! Let's break it down.
+
+UseToolCriterion is a SimpleCriterionTrigger, which Conditions can apply to.
+Conditions has a playerPredicate field. All Conditions should have a player predicate (technically a LootContextPredicate).
+Conditions also has a CODEC. This Codec is simply the codec for its one field, playerPredicate, with extra instructions to convert between them (xmap).
+INFO
+
+To learn more about codecs, see the Codecs page.
+
+We're going to need a way to check if the conditions are met. Let's add a helper method to Conditions:
+
+
+public boolean requirementsMet() {
+	return true; // AbstractCriterion#trigger helpfully checks the playerPredicate for us.
+}
+1
+2
+3
+4
+Now that we've got a criterion and its conditions, we need a way to trigger it. Add a trigger method to UseToolCriterion:
+
+
+public void trigger(ServerPlayer player) {
+	trigger(player, Conditions::requirementsMet);
+}
+1
+2
+3
+4
+Almost there! Next, we need an instance of our criterion to work with. Let's put it in a new class, called ModCriteria.
+
+
+public class ModCriteria {
+	public static final UseToolCriterion USE_TOOL = CriteriaTriggers.register(ExampleMod.MOD_ID + ":use_tool", new UseToolCriterion());
+}
+1
+2
+3
+4
+To make sure that our criteria are initialized at the right time, add a blank init method:
+
+
+// :::datagen-advancements:mod-criteria
+public static final UseToolCriterion USE_TOOL = CriteriaTriggers.register(ExampleMod.MOD_ID + ":use_tool", new UseToolCriterion());
+// :::datagen-advancements:mod-criteria
+// :::datagen-advancements:new-mod-criteria
+public static final ParameterizedUseToolCriterion PARAMETERIZED_USE_TOOL = CriteriaTriggers.register(ExampleMod.MOD_ID + ":parameterized_use_tool", new ParameterizedUseToolCriterion());
+
+// :::datagen-advancements:mod-criteria
+1
+2
+3
+4
+5
+6
+7
+And call it in your mod initializer:
+
+
+ModCriteria.init();
+1
+Finally, we need to trigger our criteria. Add this to where we sent a message to the player in the main mod class.
+
+
+ModCriteria.USE_TOOL.trigger(serverPlayer);
+1
+Your shiny new criterion is now ready to use! Let's add it to our provider:
+
+
+AdvancementHolder breakBlockWithTool = Advancement.Builder.advancement()
+		.parent(getDirt)
+		.display(
+				Items.DIAMOND_SHOVEL,
+				Component.literal("Not a Shovel"),
+				Component.literal("That's not a shovel (probably)"),
+				null,
+				AdvancementType.GOAL,
+				true,
+				true,
+				false
+		)
+		.addCriterion("break_block_with_tool", ModCriteria.USE_TOOL.createCriterion(new UseToolCriterion.Conditions(Optional.empty())))
+		.save(consumer, ExampleMod.MOD_ID + ":break_block_with_tool");
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+Run the datagen task again, and you've got your new advancement to play with!
+
+Conditions with Parameters
+This is all well and good, but what if we want to only grant an advancement once we've done something 5 times? And why not another one at 10 times? For this, we need to give our condition a parameter. You can stay with UseToolCriterion, or you can follow along with a new ParameterizedUseToolCriterion. In practice, you should only have the parameterized one, but we'll keep both for this tutorial.
+
+Let's work bottom-up. We'll need to check if the requirements are met, so let's edit our Conditions#requirementsMet method:
+
+
+public boolean requirementsMet(int totalTimes) {
+	return totalTimes > requiredTimes; // AbstractCriterion#trigger helpfully checks the playerPredicate for us.
+}
+1
+2
+3
+4
+requiredTimes doesn't exist, so make it a parameter of Conditions:
+
+
+	public record Conditions(Optional<ContextAwarePredicate> playerPredicate, int requiredTimes) implements SimpleCriterionTrigger.SimpleInstance {
+		@Override
+		public Optional<ContextAwarePredicate> player() {
+			return playerPredicate;
+		}
+
+		// :::datagen-advancements:new-requirements-met
+		public boolean requirementsMet(int totalTimes) {
+			return totalTimes > requiredTimes; // AbstractCriterion#trigger helpfully checks the playerPredicate for us.
+		}
+
+		// :::datagen-advancements:new-requirements-met
+	}
+}
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+Now our codec is erroring. Let's write a new codec for the new changes:
+
+
+		public static Codec<ParameterizedUseToolCriterion.Conditions> CODEC = RecordCodecBuilder.create(instance -> instance.group(
+				ContextAwarePredicate.CODEC.optionalFieldOf("player").forGetter(Conditions::player),
+				Codec.INT.fieldOf("requiredTimes").forGetter(Conditions::requiredTimes)
+		).apply(instance, Conditions::new));
+		// :::datagen-advancements:new-parameter
+		@Override
+		public Optional<ContextAwarePredicate> player() {
+			return playerPredicate;
+		}
+
+		// :::datagen-advancements:new-requirements-met
+		public boolean requirementsMet(int totalTimes) {
+			return totalTimes > requiredTimes; // AbstractCriterion#trigger helpfully checks the playerPredicate for us.
+		}
+
+		// :::datagen-advancements:new-requirements-met
+	}
+}
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+Moving on, we now need to fix our trigger method:
+
+
+public void trigger(ServerPlayer player, int totalTimes) {
+	trigger(player, conditions -> conditions.requirementsMet(totalTimes));
+}
+1
+2
+3
+4
+If you've made a new criterion, we need to add it to ModCriteria
+
+
+public static final ParameterizedUseToolCriterion PARAMETERIZED_USE_TOOL = CriteriaTriggers.register(ExampleMod.MOD_ID + ":parameterized_use_tool", new ParameterizedUseToolCriterion());
+
+// :::datagen-advancements:mod-criteria
+// :::datagen-advancements:mod-criteria-init
+public static void init() {
+}
+1
+2
+3
+4
+5
+6
+7
+And call it in our main class, right where the old one is:
+
+
+ModCriteria.PARAMETERIZED_USE_TOOL.trigger(serverPlayer, usedCount);
+1
+Add the advancement to your provider:
+
+
+AdvancementHolder breakBlockWithToolFiveTimes = Advancement.Builder.advancement()
+		.parent(breakBlockWithTool)
+		.display(
+				Items.GOLDEN_SHOVEL,
+				Component.literal("Not a Shovel Still"),
+				Component.literal("That's still not a shovel (probably)"),
+				null,
+				AdvancementType.GOAL,
+				true,
+				true,
+				false
+		)
+		.addCriterion("break_block_with_tool_five_times", ModCriteria.PARAMETERIZED_USE_TOOL.createCriterion(new ParameterizedUseToolCriterion.Conditions(Optional.empty(), 5)))
+		.save(consumer, ExampleMod.MOD_ID + ":break_block_with_tool_five_times");
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+Run datagen again, and you're finally done!
+
+
+
+
+
+
+
+
+
+
+
+Recipe Generation
+PREREQUISITES
+
+Make sure you've completed the datagen setup process first.
+
+Setup
+First, we'll need our provider. Make a class that extends FabricRecipeProvider. All our recipe generation will happen inside the buildRecipes method of our provider.
+
+
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+
+import net.minecraft.core.HolderLookup;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.data.recipes.RecipeCategory;
+import net.minecraft.data.recipes.RecipeOutput;
+import net.minecraft.data.recipes.RecipeProvider;
+import net.minecraft.tags.ItemTags;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.item.crafting.Ingredient;
+
+import net.fabricmc.fabric.api.datagen.v1.FabricDataOutput;
+import net.fabricmc.fabric.api.datagen.v1.provider.FabricRecipeProvider;
+
+public class ExampleModRecipeProvider extends FabricRecipeProvider {
+	public ExampleModRecipeProvider(FabricDataOutput output, CompletableFuture<HolderLookup.Provider> registriesFuture) {
+		super(output, registriesFuture);
+	}
+
+	@Override
+	protected RecipeProvider createRecipeProvider(HolderLookup.Provider registryLookup, RecipeOutput exporter) {
+		return new RecipeProvider(registryLookup, exporter) {
+			@Override
+			public void buildRecipes() {
+				HolderLookup.RegistryLookup<Item> itemLookup = registries.lookupOrThrow(Registries.ITEM);
+			}
+		};
+	}
+
+	@Override
+	public String getName() {
+		return "ExampleModRecipeProvider";
+	}
+}
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+To finish setup, add this provider to your DataGeneratorEntrypoint within the onInitializeDataGenerator method.
+
+
+pack.addProvider(ExampleModRecipeProvider::new);
+1
+Shapeless Recipes
+Shapeless recipes are fairly straightforward. Just add them to the buildRecipes method in your provider:
+
+
+
+shapeless(RecipeCategory.BUILDING_BLOCKS, Items.DIRT) // You can also specify an int to produce more than one
+		.requires(Items.COARSE_DIRT) // You can also specify an int to require more than one, or a tag to accept multiple things
+		// Create an advancement that gives you the recipe
+		.unlockedBy(getHasName(Items.COARSE_DIRT), has(Items.COARSE_DIRT))
+		.save(output);
+1
+2
+3
+4
+5
+6
+Shaped Recipes
+For a shaped recipe, you define the shape using a String, then define what each char in the String represents.
+
+
+shaped(RecipeCategory.MISC, Items.CRAFTING_TABLE, 4)
+		.pattern("ll")
+		.pattern("ll")
+		.define('l', ItemTags.LOGS) // 'l' means "any log"
+		.group("multi_bench") // Put it in a group called "multi_bench" - groups are shown in one slot in the recipe book
+		.unlockedBy(getHasName(Items.CRAFTING_TABLE), has(Items.CRAFTING_TABLE))
+		.save(output);
+shaped(RecipeCategory.MISC, Items.LOOM, 4)
+		.pattern("ww")
+		.pattern("ll")
+		.define('w', ItemTags.WOOL) // 'w' means "any wool"
+		.define('l', ItemTags.LOGS)
+		.group("multi_bench")
+		.unlockedBy(getHasName(Items.LOOM), has(Items.LOOM))
+		.save(output);
+doorBuilder(Items.OAK_DOOR, Ingredient.of(Items.OAK_BUTTON)) // Using a helper method!
+		.unlockedBy(getHasName(Items.OAK_BUTTON), has(Items.OAK_BUTTON))
+		.save(output);
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+TIP
+
+There's a lot of helper methods for creating common recipes. Check out what RecipeProvider has to offer! Use Alt+7 in IntelliJ to open the structure of a class, including a method list.
+
+Other Recipes
+Other recipes work similarly, but require a few extra parameters. For example, smelting recipes need to know how much experience to award.
+
+
+oreSmelting(
+		List.of(Items.BREAD, Items.COOKIE, Items.HAY_BLOCK), // Inputs
+		RecipeCategory.FOOD, // Category
+		Items.WHEAT, // Output
+		0.1f, // Experience
+		300, // Cooking time
+		"food_to_wheat" // group
+);
+
+
+
+
+
+
+
+
+
+
+Loot Table Generation
+PREREQUISITES
+
+Make sure you've completed the datagen setup process first.
+
+You will need different providers (classes) for blocks, chests, and entities. Remember to add them all to your pack in your DataGeneratorEntrypoint within the onInitializeDataGenerator method.
+
+
+pack.addProvider(ExampleModBlockLootTableProvider::new);
+pack.addProvider(ExampleModChestLootTableProvider::new);
+1
+2
+Loot Tables Explained
+Loot tables define what you get from breaking a block (not including contents, like in chests), killing an entity, or opening a newly-generated container. Each loot table has pools from which items are selected. Loot tables also have functions, which modify the resulting loot in some way.
+
+Loot pools have entries, conditions, functions, rolls, and bonus rolls. Entries are groups, sequences, or possibilities of items, or just items. Conditions are things that are tested for in the world, such as enchantments on a tool or a random chance. The minimum number of entries chosen by a pool are called rolls, and anything over that is called a bonus roll.
+
+Blocks
+In order for blocks to drop items - including itself - we need to make a loot table. Create a class that extends FabricBlockLootTableProvider:
+
+
+public class ExampleModBlockLootTableProvider extends FabricBlockLootTableProvider {
+	protected ExampleModBlockLootTableProvider(FabricDataOutput dataOutput, CompletableFuture<HolderLookup.Provider> registryLookup) {
+		super(dataOutput, registryLookup);
+	}
+
+	@Override
+	public void generate() {
+	}
+}
+1
+2
+3
+4
+5
+6
+7
+8
+9
+Make sure to add this provider to your pack!
+
+There's a lot of helper methods available to help you build your loot tables. We won't go over all of them, so make sure to check them out in your IDE.
+
+Let's add a few drops in the generate method:
+
+
+// Make condensed dirt drop its block item.
+// Also adds the condition that it survives the explosion that broke it, if applicable,
+dropSelf(ModBlocks.CONDENSED_DIRT);
+// Make prismarine lamps drop themselves with silk touch only
+dropWhenSilkTouch(ModBlocks.PRISMARINE_LAMP);
+// Make condensed oak logs drop between 7 and 9 oak logs
+add(ModBlocks.CONDENSED_OAK_LOG, LootTable.lootTable().withPool(applyExplosionCondition(Items.OAK_LOG, LootPool.lootPool()
+		.setRolls(new UniformGenerator(new ConstantValue(7), new ConstantValue(9)))
+		.add(LootItem.lootTableItem(Items.OAK_LOG))))
+);
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+Chests
+Chest loot is a little bit tricker than block loot. Create a class that extends SimpleFabricLootTableProvider similar to the example below and add it to your pack.
+
+
+public class ExampleModChestLootTableProvider extends SimpleFabricLootTableProvider {
+	public ExampleModChestLootTableProvider(FabricDataOutput output, CompletableFuture<HolderLookup.Provider> registryLookup) {
+		super(output, registryLookup, LootContextParamSets.CHEST);
+	}
+
+	@Override
+	public void generate(BiConsumer<ResourceKey<LootTable>, LootTable.Builder> lootTableBiConsumer) {
+	}
+}
+1
+2
+3
+4
+5
+6
+7
+8
+9
+We'll need a ResourceKey<LootTable> for our loot table. Let's put that in a new class called ModLootTables. Make sure this is in your main source set if you're using split sources.
+
+
+public class ModLootTables {
+	public static ResourceKey<LootTable> TEST_CHEST_LOOT = ResourceKey.create(Registries.LOOT_TABLE, Identifier.fromNamespaceAndPath(ExampleMod.MOD_ID, "chests/test_loot"));
+}
+1
+2
+3
+Then, we can generate a loot table inside the generate method of your provider.
+
+
+lootTableBiConsumer.accept(ModLootTables.TEST_CHEST_LOOT, LootTable.lootTable()
+		.withPool(LootPool.lootPool() // One pool
+				.setRolls(ConstantValue.exactly(2.0f)) // That has two rolls
+				.add(LootItem.lootTableItem(Items.DIAMOND) // With an entry that has diamond(s)
+						.apply(SetItemCountFunction.setCount(ConstantValue.exactly(1.0f)))) // One diamond
+				.add(LootItem.lootTableItem(Items.DIAMOND_SWORD) // With an entry that has a plain diamond sword
+				)
+		));
+
+
+
+
+
+
+
+
+
+
+
+Enchantment Generation
+PREREQUISITES
+
+Make sure you've completed the datagen setup process first.
+
+Setup
+Before implementing the generator, create the enchantment package in the main source set and add the ModEnchantments class to it. Then add the key method to this new class.
+
+
+private static ResourceKey<Enchantment> key(String path) {
+	Identifier id = Identifier.fromNamespaceAndPath(ExampleMod.MOD_ID, path);
+	return ResourceKey.create(Registries.ENCHANTMENT, id);
+}
+1
+2
+3
+4
+Use this method to create a ResourceKey for your enchantment.
+
+
+public static final ResourceKey<Enchantment> THUNDERING = key("thundering");
+1
+Now, we're ready to add the generator. In the datagen package, create a class that extends FabricDynamicRegistryProvider. In this newly created class, add a constructor that matches super, and implement the configure and getName methods.
+
+
+public class ExampleModEnchantmentGenerator extends FabricDynamicRegistryProvider {
+	public ExampleModEnchantmentGenerator(FabricDataOutput output, CompletableFuture<HolderLookup.Provider> registriesFuture) {
+		super(output, registriesFuture);
+	}
+
+	@Override
+	protected void configure(HolderLookup.Provider registries, Entries entries) {
+		entries.addAll(registries.lookupOrThrow(Registries.ENCHANTMENT)); // Add all bootstrapped enchantments for the current mod id
+	}
+
+	@Override
+	public String getName() {
+		return "Enchantments";
+	}
+
+}
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+Then, add the register helper method to the newly created class.
+
+
+private static void register(BootstrapContext<Enchantment> context, ResourceKey<Enchantment> key, Enchantment.Builder builder) {
+	context.register(key, builder.build(key.identifier()));
+}
+1
+2
+3
+Now add the bootstrap method. Here, we will be registering the enchantments we want to add to the game.
+
+
+public static void bootstrap(BootstrapContext<Enchantment> context) {
+	// ...
+}
+1
+2
+3
+In your DataGeneratorEntrypoint, override the buildRegistry method and register our bootstrap method.
+
+
+@Override
+public void buildRegistry(RegistrySetBuilder registryBuilder) {
+	registryBuilder.add(Registries.ENCHANTMENT, ExampleModEnchantmentGenerator::bootstrap);
+}
+1
+2
+3
+4
+Finally, ensure your new generator is registered within the onInitializeDataGenerator method.
+
+
+pack.addProvider(ExampleModEnchantmentGenerator::new);
+1
+Creating the Enchantment
+To create the definition for our custom enchantment, we will use the register method in our generator class.
+
+Register your enchantment in the generator's bootstrap method, using the enchantment registered in ModEnchantments.
+
+In this example, we will be using the enchantment effect created in Custom Enchantment Effects, but you can also make use of the vanilla enchantment effects.
+
+
+register(context, ModEnchantments.THUNDERING,
+		Enchantment.enchantment(
+				Enchantment.definition(
+						context.lookup(Registries.ITEM).getOrThrow(ItemTags.WEAPON_ENCHANTABLE), // The items this enchantment can be applied to
+						10, // The weight / probability of our enchantment being available in the enchanting table
+						3, // The max level of the enchantment
+						Enchantment.dynamicCost(1, 10), // The base minimum cost of the enchantment, and the additional cost for every level
+						Enchantment.dynamicCost(1, 15), // Same as the other dynamic cost, but for the maximum instead
+						5, // The cost to apply the enchantment in an anvil, in levels
+						EquipmentSlotGroup.HAND // The slot types in which this enchantment will be able to apply its effects
+				)
+		)
+		.withEffect(
+				EnchantmentEffectComponents.POST_ATTACK, // The type of effect to be applied
+				EnchantmentTarget.ATTACKER, // The target to be checked for the enchantment
+				EnchantmentTarget.VICTIM, // The target to apply the enchantment effect to
+				new LightningEnchantmentEffect(LevelBasedValue.perLevel(0.4f, 0.2f))
+		)
+);
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+Now simply run data generation, and your new enchantment will be available in-game!
+
+Effect Conditions
+Most enchantment effect types are conditional effects. When adding these effects, it is possible to pass conditions to the withEffect call.
+
+INFO
+
+For an overview of the available condition types and their usage, see the Enchantments class.
+
+
+.withEffect(
+		// ...
+		LootItemEntityPropertyCondition.hasProperties(
+				LootContext.EntityTarget.ATTACKER,
+				EntityPredicate.Builder.entity().flags(
+						EntityFlagsPredicate.Builder.flags().setIsFlying(false)
+				)
+		)
+)
+1
+2
+3
+4
+5
+6
+7
+8
+9
+Multiple Effects
+withEffect can be chained to add multiple enchantment effects to a single enchantment. However, this method requires you to specify the effect conditions for every effect.
+
+To instead share the defined conditions and targets across multiple effects, AllOf can be used to merge them into a single effect.
+
+
+AllOf.entityEffects(
+		new ApplyEntityImpulse(new Vec3(0, 0.2, -1), new Vec3(1, 1, 1), LevelBasedValue.perLevel(0.7f, 0.2f)),
+		new PlaySoundEffect(List.of(SoundEvents.LUNGE_1), ConstantFloat.of(5), ConstantFloat.of(1))
+),
+1
+2
+3
+4
+Note that the method to use depends on the type of effect being added. For example, EnchantmentValueEffect requires AnyOf.valueEffects instead. Differing effect types still require additional withEffect calls.
+
+Enchanting Table
+While we have specified the enchantment weight (or chance) in our enchantment definition, it will not appear in the enchanting table by default. To allow our enchantment to be traded by villagers and appear in the enchanting table, we need to add it to the non_treasure tag.
+
+To do this, we can create a tag provider. Create a class that extends FabricTagProvider<Enchantment> in the datagen package. Then implement the constructor with Registries.ENCHANTMENT as the registryKey parameter to super, and create the addTags method.
+
+
+public class ExampleModEnchantmentTagProvider extends FabricTagProvider<Enchantment> {
+	public ExampleModEnchantmentTagProvider(FabricDataOutput output, CompletableFuture<HolderLookup.Provider> registriesFuture) {
+		super(output, Registries.ENCHANTMENT, registriesFuture);
+	}
+
+	@Override
+	protected void addTags(HolderLookup.Provider wrapperLookup) {
+		// ...
+	}
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+We can now add our enchantment to EnchantmentTags.NON_TREASURE by calling the builder from within the addTags method.
+
+
+builder(EnchantmentTags.NON_TREASURE).add(ModEnchantments.THUNDERING);
+1
+Curses
+Curses are also implemented using tags. We can use the tag provider from the Enchanting Table section.
+
+In the addTags method, simply add your enchantment to the CURSE tag to mark it as a curse.
+
+
+builder(EnchantmentTags.CURSE).add(ModEnchantments.REPULSION_CURSE);

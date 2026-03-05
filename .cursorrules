@@ -1,0 +1,9 @@
+- ALWAYS check .fabric_docs/ for 1.21.11 coding syntax.
+- NOTE: Docs are in Yarn mappings; I am using MOJANG MAPPINGS.
+- NOTE: There are long strings of numbers after each code example, you can ignore these as they are artifacts caused by copy pasting
+
+- Translate Yarn (e.g., ClientPlayerEntity) to MojMap (e.g., LocalPlayer) automatically.
+
+- Animation Style: Pure Java (Sine/Lerp), NO GECKOLIB.
+
+- Check The_Relic_Lore.md for world-building and lore.

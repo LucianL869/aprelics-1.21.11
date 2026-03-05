@@ -1,0 +1,2128 @@
+Creating Your First Item
+This page will introduce you into some key concepts relating to items, and how you can register, texture, model and name them.
+
+If you aren't aware, everything in Minecraft is stored in registries, and items are no exception to that.
+
+Preparing Your Items Class
+To simplify the registering of items, you can create a method that accepts a string identifier, some item properties and a factory to create the Item instance.
+
+This method will create an item with the provided identifier and register it with the game's item registry.
+
+You can put this method in a class called ModItems (or whatever you want to name the class).
+
+Mojang does this with their items as well! Check out the Items class for inspiration.
+
+
+public class ModItems {
+	public static <T extends Item> T register(String name, Function<Item.Properties, T> itemFactory, Item.Properties settings) {
+		// Create the item key.
+		ResourceKey<Item> itemKey = ResourceKey.create(Registries.ITEM, Identifier.fromNamespaceAndPath(ExampleMod.MOD_ID, name));
+
+		// Create the item instance.
+		T item = itemFactory.apply(settings.setId(itemKey));
+
+		// Register the item.
+		Registry.register(BuiltInRegistries.ITEM, itemKey, item);
+
+		return item;
+	}
+
+}
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+Notice how we're using T, a generic type that extends Item. This allows us to use the same method register for registering any type of item that extends Item. We're also using a Function for the factory, which allows us to specify how we want our item to be created given the item properties.
+
+Registering an Item
+You can now register an item using the method now.
+
+The register method takes in an instance of the Item.Properties class as a parameter. This class allows you to configure the item's properties through various builder methods.
+
+TIP
+
+If you want to change your item's stack size, you can use the stacksTo method in the Item.Properties class.
+
+This will not work if you've marked the item as damageable, as the stack size is always 1 for damageable items to prevent duplication exploits.
+
+
+public static final Item SUSPICIOUS_SUBSTANCE = register("suspicious_substance", Item::new, new Item.Properties());
+1
+Item::new tells the register function to create an Item instance from an Item.Properties by calling the Item constructor (new Item(...)), which takes an Item.Properties as a parameter.
+
+However, if you now try to run the modified client, you can see that our item doesn't exist in-game yet! This is because you didn't statically initialize the class.
+
+To do this, you can add a public static initialize method to your class and call it from your mod's initializer class. Currently, this method doesn't need anything inside it.
+
+
+public static void initialize() {
+}
+1
+2
+3
+
+public class ExampleModItems implements ModInitializer {
+	@Override
+	public void onInitialize() {
+		ModItems.initialize();
+	}
+}
+1
+2
+3
+4
+5
+6
+Calling a method on a class statically initializes it if it hasn't been previously loaded - this means that all static fields are evaluated. This is what this dummy initialize method is for.
+
+Adding the Item to a Creative Tab
+INFO
+
+If you want to add the item to a custom CreativeModeTab, check out the Custom Creative Tabs page for more information.
+
+For example purposes, we will add this item to the ingredients CreativeModeTab, you will need to use Fabric API's creative tab events - specifically ItemGroupEvents.modifyEntriesEvent
+
+This can be done in the initialize method of your items class.
+
+
+// Get the event for modifying entries in the ingredients group.
+// And register an event handler that adds our suspicious item to the ingredients group.
+ItemGroupEvents.modifyEntriesEvent(CreativeModeTabs.INGREDIENTS)
+		.register((itemGroup) -> itemGroup.accept(ModItems.SUSPICIOUS_SUBSTANCE));
+1
+2
+3
+4
+Loading into the game, you can see that our item has been registered, and is in the Ingredients creative tab:
+
+Item in the ingredients group
+
+However, it's missing the following:
+
+Item Model
+Texture
+Translation (name)
+Naming The Item
+The item currently doesn't have a translation, so you will need to add one. The translation key has already been provided by Minecraft: item.example-mod.suspicious_substance.
+
+Create a new JSON file at: src/main/resources/assets/example-mod/lang/en_us.json and put in the translation key, and its value:
+
+
+{
+  "item.example-mod.suspicious_substance": "Suspicious Substance"
+}
+1
+2
+3
+You can either restart the game or build your mod and press F3+T to apply changes.
+
+Adding a Client Item, Texture and Model
+For your item to have a proper appearance, it requires:
+
+An item texture
+An item model
+A client item
+Adding a Texture
+INFO
+
+For more information on this topic, see the Item Models page.
+
+To give your item a texture and model, simply create a 16x16 texture image for your item and save it in the assets/example-mod/textures/item folder. Name the texture file the same as the item's identifier, but with a .png extension.
+
+For example purposes, you can use this example texture for suspicious_substance.png
+
+
+Download Texture
+Adding a Model
+When restarting/reloading the game - you should see that the item still has no texture, that's because you will need to add a model that uses this texture.
+
+You're going to create a simple item/generated model, which takes in an input texture and nothing else.
+
+Create the model JSON in the assets/example-mod/models/item folder, with the same name as the item; suspicious_substance.json
+
+
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "example-mod:item/suspicious_substance"
+  }
+}
+1
+2
+3
+4
+5
+6
+Breaking Down the Model JSON
+parent: This is the parent model that this model will inherit from. In this case, it's the item/generated model.
+textures: This is where you define the textures for the model. The layer0 key is the texture that the model will use.
+Most items will use the item/generated model as their parent, as it's a simple model that just displays the texture.
+
+There are alternatives, such as item/handheld which is used for items that are "held" in the player's hand, such as tools.
+
+Creating the Client Item
+Minecraft doesn't automatically know where your items' model files can be found, we need to provide a client item.
+
+Create the client item JSON in the assets/example-mod/items, with the same file name as the identifier of the item: suspicious_substance.json.
+
+
+{
+  "model": {
+    "type": "minecraft:model",
+    "model": "example-mod:item/suspicious_substance"
+  }
+}
+1
+2
+3
+4
+5
+6
+Breaking Down the Client Item JSON
+model: This is the property that contains the reference to our model.
+type: This is the type of our model. For most items, this should be minecraft:model
+model: This is the model's identifier. It should have this form: example-mod:item/item_name
+Your item should now look like this in-game:
+
+Item with correct model
+
+Making the Item Compostable or a Fuel
+Fabric API provides various registries that can be used to add additional properties to your item.
+
+For example, if you want to make your item compostable, you can use the CompostingChanceRegistry:
+
+
+// Add the suspicious substance to the composting registry with a 30% chance of increasing the composter's level.
+CompostingChanceRegistry.INSTANCE.add(ModItems.SUSPICIOUS_SUBSTANCE, 0.3f);
+1
+2
+Alternatively, if you want to make your item a fuel, you can use the FuelRegistryEvents.BUILD event:
+
+
+// Add the suspicious substance to the registry of fuels, with a burn time of 30 seconds.
+// Remember, Minecraft deals with logical based-time using ticks.
+// 20 ticks = 1 second.
+FuelRegistryEvents.BUILD.register((builder, context) -> {
+	builder.add(ModItems.SUSPICIOUS_SUBSTANCE, 30 * 20);
+});
+1
+2
+3
+4
+5
+6
+Adding a Basic Crafting Recipe
+If you want to add a crafting recipe for your item, you will need to place a recipe JSON file in the data/example-mod/recipe folder.
+
+For more information on the recipe format, check out these resources:
+
+Recipe JSON Generator
+Minecraft Wiki - Recipe JSON
+Custom Tooltips
+If you want your item to have a custom tooltip, you will need to create a class that extends Item and override the appendHoverText method.
+
+INFO
+
+This example uses the LightningStick class created in the Custom Item Interactions page.
+
+
+@Override
+public void appendHoverText(ItemStack stack, TooltipContext context, TooltipDisplay displayComponent, Consumer<Component> textConsumer, TooltipFlag type) {
+	textConsumer.accept(Component.translatable("itemTooltip.example-mod.lightning_stick").withStyle(ChatFormatting.GOLD));
+}
+1
+2
+3
+4
+5
+Each call to accept() will add one line to the tooltip.
+
+
+
+
+
+
+
+
+
+
+
+
+
+Food Items
+Food is a core aspect of survival Minecraft, so when creating edible items you have to consider the food's usage with other edible items.
+
+Unless you're making a mod with overpowered items, you should consider:
+
+How much hunger your edible item adds or removes.
+What potion effect(s) does it grant?
+Is it early-game or endgame accessible?
+Adding the Food Component
+To add a food component to an item, we can pass it to the Item.Properties instance:
+
+
+new Item.Properties().food(new FoodProperties.Builder().build())
+1
+Right now, this just makes the item edible and nothing more.
+
+The FoodProperties.Builder class has some methods that allow you to modify what happens when a player eats your item:
+
+Method	Description
+nutrition	Sets the amount of hunger points your item will replenish.
+saturationModifier	Sets the amount of saturation points your item will add.
+alwaysEdible	Allows your item to be eaten regardless of hunger level.
+When you've modified the builder to your liking, you can call the build() method to get the FoodProperties.
+
+If you want to add status effects to the player when they eat your food, you will need to add a Consumable component alongside the FoodProperties component as seen in the following example:
+
+
+public static final Consumable POISON_FOOD_CONSUMABLE_COMPONENT = Consumables.defaultFood()
+		// The duration is in ticks, 20 ticks = 1 second
+		.onConsume(new ApplyStatusEffectsConsumeEffect(new MobEffectInstance(MobEffects.POISON, 6 * 20, 1), 1.0f))
+		.build();
+public static final FoodProperties POISON_FOOD_COMPONENT = new FoodProperties.Builder()
+		.alwaysEdible()
+		.build();
+1
+2
+3
+4
+5
+6
+7
+Similar to the example in the Creating Your First Item page, I'll be using the above component:
+
+
+public static final Item POISONOUS_APPLE = register(
+		"poisonous_apple",
+		Item::new,
+		new Item.Properties().food(POISON_FOOD_COMPONENT, POISON_FOOD_CONSUMABLE_COMPONENT)
+);
+1
+2
+3
+4
+5
+This makes the item:
+
+Always edible, it can be eaten regardless of hunger level.
+Always give Poison II for 6 seconds when eaten.
+
+
+
+
+
+
+
+
+
+
+Potions
+Potions are consumables that grants an entity an effect. A player can brew potions using a Brewing Stand or obtain them as items through various other game mechanics.
+
+Custom Potions
+Just like items and blocks, potions need to be registered.
+
+Creating the Potion
+Let's start by declaring a field to hold your Potion instance. We will be directly using a ModInitializer-implementing class to hold this. Note the use of Registry.registerForHolder, as, like mob effects, most vanilla methods that use potions prefer them as holders.
+
+
+// :::1
+public class ExampleModPotions implements ModInitializer {
+	public static final Holder<Potion> TATER_POTION =
+			Registry.registerForHolder(
+					BuiltInRegistries.POTION,
+					Identifier.fromNamespaceAndPath(ExampleMod.MOD_ID, "tater"),
+					new Potion("tater",
+							new MobEffectInstance(
+									ExampleModEffects.TATER,
+									3600,
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+We pass an instance of MobEffectInstance, which takes 3 parameters:
+
+Holder<MobEffect> type - An effect, represented as a holder. We use our custom effect here. Alternatively you can access vanilla effects through vanilla's MobEffects class.
+int duration - Duration of the effect in game ticks.
+int amplifier - An amplifier for the effect. For example, Haste II would have an amplifier of 1.
+INFO
+
+To create your own potion effect, please see the Effects guide.
+
+Registering the Potion
+In our initializer, we will use the FabricBrewingRecipeRegistryBuilder.BUILD event to register our potion using the BrewingRecipeRegistry.registerPotionRecipe method.
+
+
+
+@Override
+public void onInitialize() {
+	FabricBrewingRecipeRegistryBuilder.BUILD.register(builder -> {
+		builder.addMix(
+				// Input potion.
+				Potions.WATER,
+				// Ingredient
+				Items.POTATO,
+				// Output potion.
+				TATER_POTION
+		);
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+registerPotionRecipe takes 3 parameters:
+
+Holder<Potion> input - The starting potion, represented by a holder. Usually this can be a Water Bottle or an Awkward Potion.
+Item item - The item which is the main ingredient of the potion.
+Holder<Potion> output - The resultant potion, represented by a holder.
+Once registered, you can brew a Tater potion using a potato.
+
+
+
+
+
+
+
+
+
+
+
+Spawn Eggs
+PREREQUISITES
+
+You must first understand how to create an item, which you can then turn into a spawn egg.
+
+Spawn eggs are special items that, when used, spawn their corresponding mob. You can register one with the register method from your items class, by passing SpawnEggItem::new to it.
+
+
+public static final SpawnEggItem CUSTOM_SPAWN_EGG = register(
+		"custom_spawn_egg",
+		SpawnEggItem::new,
+		new Item.Properties().spawnEgg(EntityType.FROG)
+);
+	ItemGroupEvents.modifyEntriesEvent(CreativeModeTabs.SPAWN_EGGS)
+			.register(itemGroup -> itemGroup.accept(ModItems.CUSTOM_SPAWN_EGG));
+1
+2
+3
+4
+5
+6
+7
+Spawn egg item without texture
+
+There are still a few things to do before it's ready: you must add a texture, an item model, a client item, a name, and add the spawn egg to the appropriate creative tab.
+
+Adding a Texture
+Create the 16x16 item texture in the assets/example-mod/textures/item directory, with the same file name as the id of the item: custom_spawn_egg.png. An example texture is provided below.
+
+
+Download Texture
+Adding a Model
+Create the item model in the assets/example-mod/models/item directory, with the same file name as the id of the item: custom_spawn_egg.json.
+
+
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "example-mod:item/custom_spawn_egg"
+  }
+}
+1
+2
+3
+4
+5
+6
+Creating the Client Item
+Create the client item JSON in the assets/example-mod/items directory, with the same file name as the id of the item model: custom_spawn_egg.json.
+
+
+{
+  "model": {
+    "type": "minecraft:model",
+    "model": "example-mod:item/custom_spawn_egg"
+  }
+}
+1
+2
+3
+4
+5
+6
+Spawn egg item with client item
+
+Naming The Spawn Egg
+To name the spawn egg, the translation key item.example-mod.custom_spawn_egg must be assigned a value. This process is similar to Naming The Item.
+
+Create or edit JSON file at: src/main/resources/assets/example-mod/lang/en_us.json and put in the translation key, and its value:
+
+
+{
+  "item.example-mod.custom_spawn_egg": "Custom Spawn Egg"
+}
+1
+2
+3
+Adding To A Creative Mode Tab
+The spawn egg is added to the spawn egg CreativeModeTab in the initialize() method of the items class.
+
+
+ItemGroupEvents.modifyEntriesEvent(CreativeModeTabs.SPAWN_EGGS)
+		.register(itemGroup -> itemGroup.accept(ModItems.CUSTOM_SPAWN_EGG));
+
+
+
+
+
+
+
+
+
+
+
+Tools and Weapons
+Tools are essential for survival and progression, allowing players to gather resources, construct buildings, and defend themselves.
+
+Creating a Tool Material
+You can create a tool material by instantiating a new ToolMaterial object and storing it in a field that can be used later to create the tool items that use the material.
+
+
+public static final ToolMaterial GUIDITE_TOOL_MATERIAL = new ToolMaterial(
+		BlockTags.INCORRECT_FOR_WOODEN_TOOL,
+		455,
+		5.0F,
+		1.5F,
+		22,
+		GuiditeArmorMaterial.REPAIRS_GUIDITE_ARMOR
+);
+1
+2
+3
+4
+5
+6
+7
+8
+The ToolMaterial constructor accepts the following parameters, in this specific order:
+
+Parameter	Description
+incorrectBlocksForDrops	If a block is in the incorrectBlocksForDrops tag, it means that when you use a tool made from this ToolMaterial on that block, the block will not drop any items.
+durability	The durability of all tools that are of this ToolMaterial.
+speed	The mining speed of the tools that are of this ToolMaterial.
+attackDamageBonus	The additional attack damage of the tools that are of this ToolMaterial will have.
+enchantmentValue	The "Enchantability" of tools which are of this ToolMaterial.
+repairItems	Any items within this tag can be used to repair tools of this ToolMaterial in an anvil.
+For this example, we will use the same repair item we will be using for armor. We define the tag reference as follows:
+
+
+public static final TagKey<Item> REPAIRS_GUIDITE_ARMOR = TagKey.create(BuiltInRegistries.ITEM.key(), Identifier.fromNamespaceAndPath(ExampleMod.MOD_ID, "repairs_guidite_armor"));
+1
+If you're struggling to determine balanced values for any of the numerical parameters, you should consider looking at the vanilla tool material constants, such as ToolMaterial.STONE or ToolMaterial.DIAMOND.
+
+Creating Tool Items
+Using the same utility function as in the Creating Your First Item guide, you can create your tool items:
+
+
+public static final Item GUIDITE_SWORD = register(
+		"guidite_sword",
+		Item::new,
+		new Item.Properties().sword(GUIDITE_TOOL_MATERIAL, 1f, 1f)
+);
+1
+2
+3
+4
+5
+The two float values (1f, 1f) refer to the attack damage of the tool and the attack speed of the tool respectively.
+
+Remember to add them to a creative tab if you want to access them from the creative inventory!
+
+
+ItemGroupEvents.modifyEntriesEvent(CreativeModeTabs.TOOLS_AND_UTILITIES)
+		.register((itemGroup) -> itemGroup.accept(ModItems.GUIDITE_SWORD));
+1
+2
+You will also have to add a texture, item translation and item model. However, for the item model, you'll want to use the item/handheld model as your parent instead of the usual item/generated.
+
+For this example, I will be using the following model and texture for the "Guidite Sword" item:
+
+
+{
+  "parent": "minecraft:item/handheld",
+  "textures": {
+    "layer0": "example-mod:item/guidite_sword"
+  }
+}
+1
+2
+3
+4
+5
+6
+
+Download Texture
+That's pretty much it! If you go in-game you should see your tool item(s) in the tools tab of the creative inventory menu.
+
+
+
+
+
+
+
+
+
+
+Custom Armor
+Armor provides the player with increased defense against attacks from mobs and other players.
+
+Creating an Armor Materials Class
+Technically, you don't need a dedicated class for your armor material, but it's good practice anyways with the number of static fields you will need.
+
+For this example, we'll create a GuiditeArmorMaterial class to store our static fields.
+
+Base Durability
+This constant will be used in the Item.Properties#maxDamage(int damageValue) method when creating our armor items, it is also required as a parameter in the ArmorMaterial constructor when we create our ArmorMaterial object later.
+
+
+public static final int BASE_DURABILITY = 15;
+1
+If you're struggling to determine a balanced base durability, you can refer to the vanilla armor material instances found in the ArmorMaterials interface.
+
+Equipment Asset Registry Key
+Even though we don't have to register our ArmorMaterial to any registries, it's generally good practice to store any registry keys as constants, as the game will use this to find the relevant textures for our armor.
+
+
+public static final ResourceKey<EquipmentAsset> GUIDITE_ARMOR_MATERIAL_KEY = ResourceKey.create(EquipmentAssets.ROOT_ID, Identifier.fromNamespaceAndPath(ExampleMod.MOD_ID, "guidite"));
+1
+We will pass this to the ArmorMaterial constructor later.
+
+ArmorMaterial Instance
+To create our material, we need to create a new instance of the ArmorMaterial record, the base durability and material registry key constants will be used here.
+
+
+public static final ArmorMaterial INSTANCE = new ArmorMaterial(
+		BASE_DURABILITY,
+		Map.of(
+				ArmorType.HELMET, 3,
+				ArmorType.CHESTPLATE, 8,
+				ArmorType.LEGGINGS, 6,
+				ArmorType.BOOTS, 3
+		),
+		5,
+		SoundEvents.ARMOR_EQUIP_IRON,
+		0.0F,
+		0.0F,
+		REPAIRS_GUIDITE_ARMOR,
+		GUIDITE_ARMOR_MATERIAL_KEY
+);
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+The ArmorMaterial constructor accepts the following parameters, in this specific order:
+
+Parameter	Description
+durability	The base durability of all armor pieces, this is used when calculating the total durability of each individual armor piece that use this material. This should be the base durability constant you created earlier.
+defense	A map of EquipmentType (an enum representing each armor slot) to an integer value, which indicates the defense value of the material when used in the corresponding armor slot.
+enchantmentValue	The "enchantability" of armor items which use this material.
+equipSound	A registry entry of a sound event that is played when you equip a piece of armor which uses this material. For more information on sounds, check out the Custom Sounds page.
+toughness	A float value which represents the "toughness" attribute of the armor material - essentially how well the armor will absorb damage.
+knockbackResistance	A float value which represents the amount of knockback resistance the armor material grants the wearer.
+repairIngredient	An item tag that represents all items which can be used to repair the armor items of this material in an anvil.
+assetId	An EquipmentAsset registry key, this should be the equipment asset registry key constant you created earlier.
+We define the repair ingredient tag reference as follows:
+
+
+public static final TagKey<Item> REPAIRS_GUIDITE_ARMOR = TagKey.create(BuiltInRegistries.ITEM.key(), Identifier.fromNamespaceAndPath(ExampleMod.MOD_ID, "repairs_guidite_armor"));
+1
+If you're struggling to determine values for any of the parameters, you can consult the vanilla ArmorMaterial instances which can be found in the ArmorMaterials interface.
+
+Creating the Armor Items
+Now that you've registered the material, you can create the armor items in your ModItems class:
+
+Obviously, an armor set doesn't need every type to be satisfied, you can have a set with just boots, or leggings etc. - the vanilla turtle shell helmet is a good example of an armor set with missing slots.
+
+Unlike ToolMaterial, ArmorMaterial does not store any information about the durability of items. For this reason the base durability needs to be manually added to the armor items' Item.Properties when registering them.
+
+This is achieved by passing the BASE_DURABILITY constant we created previously into the maxDamage method in the Item.Properties class.
+
+
+public static final Item GUIDITE_HELMET = register(
+		"guidite_helmet",
+		Item::new,
+		new Item.Properties().humanoidArmor(GuiditeArmorMaterial.INSTANCE, ArmorType.HELMET)
+				.durability(ArmorType.HELMET.getDurability(GuiditeArmorMaterial.BASE_DURABILITY))
+);
+public static final Item GUIDITE_CHESTPLATE = register("guidite_chestplate",
+		Item::new,
+		new Item.Properties().humanoidArmor(GuiditeArmorMaterial.INSTANCE, ArmorType.CHESTPLATE)
+				.durability(ArmorType.CHESTPLATE.getDurability(GuiditeArmorMaterial.BASE_DURABILITY))
+);
+
+public static final Item GUIDITE_LEGGINGS = register(
+		"guidite_leggings",
+		Item::new,
+		new Item.Properties().humanoidArmor(GuiditeArmorMaterial.INSTANCE, ArmorType.LEGGINGS)
+				.durability(ArmorType.LEGGINGS.getDurability(GuiditeArmorMaterial.BASE_DURABILITY))
+);
+
+public static final Item GUIDITE_BOOTS = register(
+		"guidite_boots",
+		Item::new,
+		new Item.Properties().humanoidArmor(GuiditeArmorMaterial.INSTANCE, ArmorType.BOOTS)
+				.durability(ArmorType.BOOTS.getDurability(GuiditeArmorMaterial.BASE_DURABILITY))
+);
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+You will also need to add the items to a creative tab if you want them to be accessible from the creative inventory.
+
+As with all items, you should create translation keys for them as well.
+
+Textures and Models
+You will need to create a set of textures for the items, and a set of textures for the actual armour when it's worn by a "humanoid" entity (players, zombies, skeletons, etc).
+
+Item Textures and Model
+These textures are no different to other items - you must create the textures, and create a generic generated item model - which was covered in the Creating Your First Item guide.
+
+For example purposes, you may use the following textures and model JSON as a reference.
+
+
+Download Item Textures
+INFO
+
+You will need model JSON files for all the items, not just the helmet, it's the same principle as other item models.
+
+
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "example-mod:item/guidite_helmet"
+  }
+}
+1
+2
+3
+4
+5
+6
+As you can see, in-game the armor items should have suitable models:
+
+Armor item models
+
+Armor Textures
+When an entity wears your armor, nothing will be shown. This is because you're missing textures and the equipment model definitions.
+
+Broken armor model on player
+
+There are two layers for the armor texture, both must be present.
+
+Previously, we created a ResourceKey<EquipmentAsset> constant called GUIDITE_ARMOR_MATERIAL_KEY which we passed into our ArmorMaterial constructor. It's recommended to name the texture similarly, so in our case, guidite.png
+
+assets/example-mod/textures/entity/equipment/humanoid/guidite.png - Contains upper body and boot textures.
+assets/example-mod/textures/entity/equipment/humanoid_leggings/guidite.png - Contains legging textures.
+Download Guidite Armor Model Textures
+TIP
+
+If you're updating to 1.21.11 from an older version of the game, the humanoid folder is where your layer0.png armor texture goes, and the humanoid_leggings folder is where your layer1.png armor texture goes.
+
+Next, you'll need to create an associated equipment model definition. These go in the /assets/example-mod/equipment/ folder.
+
+The ResourceKey<EquipmentAsset> constant we created earlier will determine the name of the JSON file. In this case, it'll be guidite.json.
+
+Since we only plan to add "humanoid" (helmet, chestplate, leggings, boots etc.) armor pieces, our equipment model definition will look like this:
+
+
+{
+  "layers": {
+    "humanoid": [
+      {
+        "texture": "example-mod:guidite"
+      }
+    ],
+    "humanoid_leggings": [
+      {
+        "texture": "example-mod:guidite"
+      }
+    ]
+  }
+}
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+With the textures and equipment model definition present, you should be able to see your armor on entities that wear it:
+
+
+
+
+
+
+
+
+
+
+
+Item Models
+This page will guide you through writing your own item models and understanding all their options and possibilities.
+
+What Are Item Models?
+Item models are essentially the definition of an item's looks and visuals. They specify a texture, model translation, rotation, scale and other attributes.
+
+Models are stored as JSON files in your resources folder.
+
+File Structure
+Every item model file has a defined structure that has to be followed. It starts with empty curly brackets, which represent the root tag of the model. Here's a brief scheme of how item models are structured:
+
+
+{
+  "parent": "...",
+  "display": {
+    "<position>": {
+      "rotation": [0.0, 0.0, 0.0],
+      "translation": [0.0, 0.0, 0.0],
+      "scale": [0.0, 0.0, 0.0]
+    }
+  },
+  "textures": {
+    "<layerN>": "...",
+    "particle": "...",
+    "<texture_variable>": "..."
+  },
+  "gui_light": "...",
+  "elements": [
+    {
+      "from": [0.0, 0.0, 0.0],
+      "to": [0.0, 0.0, 0.0],
+      "rotation": {
+        "origin": [0.0, 0.0, 0.0],
+        "axis": "...",
+        "angle": "...",
+        "rescale": "true/false"
+      },
+      "shade": "true/false",
+      "light_emission": "...",
+      "faces": {
+        "<key>": {
+          "uv": [0, 0, 0, 0],
+          "texture": "...",
+          "cullface": "...",
+          "rotation": "...",
+          "tintindex": "..."
+        }
+      }
+    }
+  ]
+}
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+Parent
+
+{
+  "parent": "..."
+}
+1
+2
+3
+Loads a different model with all its attributes from the given path, as an identifier (namespace:path).
+
+Set this tag to item/generated to use a model created from the specified icon, or set it to builtin/generated to use the model without any translation, rotation, or scaling.
+
+Display
+
+{
+  "display": {
+    "<position>": {
+      "rotation": [0.0, 0.0, 0.0],
+      "translation": [0.0, 0.0, 0.0],
+      "scale": [0.0, 0.0, 0.0]
+    }
+  }
+}
+1
+2
+3
+4
+5
+6
+7
+8
+9
+This tag is responsible for setting the model translation, rotation and scale in a specified position.
+
+The position object can be one of the following strings, which define what the model will look like in different positions:
+
+Value	Description
+firstperson_righthand	Right hand, as seen in first-person
+firstperson_lefthand	Left hand, as seen in first-person
+thirdperson_righthand	Right hand, as seen in third-person (F5)
+thirdperson_lefthand	Left hand, as seen in third-person (F5)
+gui	When in a GUI, for example the inventory
+head	When put on the player's head, for example a banner
+ground	When on the ground
+fixed	When put in an item frame
+Furthermore, each position can contain these three values, in the form of an array of floats:
+
+
+{
+  "rotation": [0.0, 0.0, 0.0],
+  "translation": [0.0, 0.0, 0.0],
+  "scale": [0.0, 0.0, 0.0]
+}
+1
+2
+3
+4
+5
+rotation: Three floats. Specifies the rotation of the model according to the scheme [x, y, z].
+translation: Three floats. Specifies the translation of the model according to the scheme [x, y, z]. Values must be between -80 and 80; anything outside of this range is set to the closest extremum.
+scale: Three floats. Specifies the scale of the model according to the scheme [x, y, z]. The maximum value is 4, bigger values are treated as 4.
+Textures
+
+{
+  "textures": {
+    "<layerN>": "...",
+    "particle": "...",
+    "<texture_variable>": "..."
+  }
+}
+1
+2
+3
+4
+5
+6
+7
+The textures tag holds the textures of the model, in the form of an identifier or a texture variable. It contains three additional objects:
+
+<layerN>: String. It specifies the icon of the item used in inventory. There can be more than one layer (e.g., spawn eggs), and at most 3.
+particle: String. Defines the texture to load particles from. If not defined, uses the layer0.
+<texture_variable>: String. It creates a variable and assigns a texture. Can be later referenced with the # prefix (e.g., "top": "namespace:path" ⇒ #top)
+IMPORTANT
+
+<layerN> only works if parent is set as item/generated!
+
+GUI Light
+
+{
+  "gui_light": "..."
+}
+1
+2
+3
+This tag defines the direction from which the item model is illuminated. Can be either front or side, with the latter being the default. If set to front, the model is rendered like a flat item, if set side, the item is rendered like a block.
+
+Elements
+
+{
+  "elements": [
+    {
+      "from": [0.0, 0.0, 0.0],
+      "to": [0.0, 0.0, 0.0],
+      "rotation": {
+        "origin": [0.0, 0.0, 0.0],
+        "axis": "...",
+        "angle": "...",
+        "rescale": "true/false"
+      },
+      "shade": "true/false",
+      "light_emission": "...",
+      "faces": {
+        "<face>": {
+          "uv": [0, 0, 0, 0],
+          "texture": "...",
+          "cullface": "...",
+          "rotation": "...",
+          "tintindex": "..."
+        }
+      }
+    }
+  ]
+}
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+Contains all elements of a model, which can only be cubic. If both parent and elements tags are set, this file's elements tag overrides the parent's one.
+
+
+{
+  "from": [0.0, 0.0, 0.0],
+  "to": [0.0, 0.0, 0.0]
+}
+1
+2
+3
+4
+from specifies the starting point of the cuboid according to the scheme [x, y, z], relative to the lower left corner. to specifies the ending point. A cuboid as big as a standard block would start at [0, 0, 0] and end at [16, 16, 16]. The values of both must be between -16 and 32, which means that every item model can be at most 3×3 blocks big.
+
+
+{
+  "rotation": {
+    "origin": [0.0, 0.0, 0.0],
+    "axis": "...",
+    "angle": "...",
+    "rescale": "true/false"
+  }
+}
+1
+2
+3
+4
+5
+6
+7
+8
+rotation defines the rotation of an element. It contains four more values:
+
+origin: Three floats. Sets the center of the rotation according to the scheme [x, y z].
+axis: String. Specifies the direction of rotation, and must be one of these: x, y and z.
+angle: Float. Specifies the angle of rotation. Ranges from -45 to 45 in 22.5 degree increments.
+rescale: Boolean. Specifies whether to scale the faces across the whole block. Defaults to false.
+
+{
+  "shade": "true/false"
+}
+1
+2
+3
+shade defines if shadows are rendered. Defaults to true.
+
+
+{
+  "light_emission": "..."
+}
+1
+2
+3
+light_emission defines the minimum light level that the element can receive. It can range between 0 and 15. Defaults to 0.
+
+
+{
+  "faces": {
+    "<key>": {
+      "uv": [0, 0, 0, 0],
+      "texture": "...",
+      "cullface": "...",
+      "rotation": 0,
+      "tintindex": 0
+    }
+  }
+}
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+faces holds all faces of a cuboid. If a face is not set, it will not be rendered. Its keys (<key>) can be one of: down, up, north, south, west or east. Each key contains the properties for that face:
+
+uv: Four integers. Defines the area of the texture to use according to the scheme [x1, y1, x2, y2]. If unset, it defaults to values equal to xyz position of the element. Flipping the values of x1 and x2 (for example from 0, 0, 16, 16 to 16, 0, 0, 16) flips the texture. UV is optional, and if not supplied, it's automatically generated based on the element's position.
+texture: String. Specifies the texture of the face in the form of a texture variable, prepended with #.
+cullface: String. Can be: down, up, north, south, west, or east. Specifies whether a face does not need to be rendered when there is a block touching it in the specified position. It also determines the side of the block to use the light level from for lighting the face, and if unset, defaults to the side.
+rotation: Integer. Rotates the texture by the specified number of degrees in 90 degree increments. Rotation does not affect which part of the texture is used. Instead, it amounts to permutation of the selected texture vertices (selected implicitly, or explicitly though uv).
+tintidex: Integer. Tints the texture on that face using a tint value referenced from the client item. If no tint color (or white) is provided, the texture isn't tinted.
+
+
+
+
+
+
+
+
+
+
+
+Item Appearance
+You can manipulate an item's appearance through its client item. There is a list of vanilla modifications on the Minecraft Wiki.
+
+Out of those, a commonly used type is Tint Sources, which allow you to change the color of the item based on predefined conditions.
+
+There are only a handful of predefined tint sources, so let's see how to create our own.
+
+For this example, let's register an item. If you are unfamiliar with this process, please read about item registration first.
+
+
+public static final Item WAXCAP_BLOCK_ITEM = Registry.register(
+				BuiltInRegistries.ITEM,
+				Identifier.fromNamespaceAndPath(ExampleMod.MOD_ID, "waxcap"),
+				new BlockItem(WAXCAP_BLOCK, new Item.Properties()
+								.setId(WAXCAP_BLOCK_ITEM_KEY))
+);
+1
+2
+3
+4
+5
+6
+Make sure to add:
+
+A client item in /items/waxcap.json
+An item model in /models/item/waxcap.json
+A texture in /textures/item/waxcap.png
+The item should appear in-game.
+
+Registered Item
+
+As you can see, we're using a grayscale texture. Let's add some color using a tint source.
+
+Item Tint Sources
+Let's register a custom tint source to color our Waxcap item, so that when it rains, the item will look blue, otherwise it will look brown.
+
+You'll first need to define a custom item tint source. This is done by implementing the ItemTintSource interface on a class or a record.
+
+
+public record RainTintSource(int color) implements ItemTintSource {
+	public static final MapCodec<RainTintSource> MAP_CODEC = RecordCodecBuilder.mapCodec(
+					instance -> instance.group(
+									ExtraCodecs.RGB_COLOR_CODEC.fieldOf("color").forGetter(RainTintSource::color)).apply(instance, RainTintSource::new)
+	);
+
+	public RainTintSource() {
+		this(ARGB.opaque(0x00BFFF)); // Color code in hex format
+	}
+
+	@Override
+	public int calculate(ItemStack itemStack, @Nullable ClientLevel clientLevel, @Nullable LivingEntity livingEntity) {
+		if (clientLevel != null && clientLevel.isRaining()) {
+			return ARGB.opaque(color);
+		}
+
+		return ARGB.opaque(0xFFEFD5); // Color code in hex format
+	}
+
+	@Override
+	public @NotNull MapCodec<? extends ItemTintSource> type() {
+		return MAP_CODEC;
+	}
+}
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+As this is part of the client item definition, tint values can be changed with a resource pack. So you need to define a Map Codec that's capable of reading your tint definition. In this case, the tint source will have an int value describing the color it will have when raining. We can use the built-in ExtraCodecs.RGB_COLOR_CODEC to compose our Codec.
+
+
+public static final MapCodec<RainTintSource> MAP_CODEC = RecordCodecBuilder.mapCodec(
+				instance -> instance.group(
+								ExtraCodecs.RGB_COLOR_CODEC.fieldOf("color").forGetter(RainTintSource::color)).apply(instance, RainTintSource::new)
+);
+1
+2
+3
+4
+We can then return this Codec in type().
+
+
+@Override
+public @NotNull MapCodec<? extends ItemTintSource> type() {
+	return MAP_CODEC;
+}
+1
+2
+3
+4
+Finally, we can provide an implementation for calculate that would decide what the tint color would be. The value of color is the one coming from the resource pack.
+
+
+@Override
+public int calculate(ItemStack itemStack, @Nullable ClientLevel clientLevel, @Nullable LivingEntity livingEntity) {
+	if (clientLevel != null && clientLevel.isRaining()) {
+		return ARGB.opaque(color);
+	}
+
+	return ARGB.opaque(0xFFEFD5); // Color code in hex format
+}
+1
+2
+3
+4
+5
+6
+7
+8
+We then need to register our item tint source. This is done in the client initializer using the ID_MAPPER declared in ItemTintSources.
+
+
+ItemTintSources.ID_MAPPER.put(Identifier.fromNamespaceAndPath(ExampleMod.MOD_ID, "color"), RainTintSource.MAP_CODEC);
+1
+Once this is done, we can use our item tint source in a client item definition.
+
+
+{
+  "model": {
+    "type": "minecraft:model",
+    "model": "example-mod:item/waxcap",
+    "tints": [
+      {
+        "type": "example-mod:color",
+        "color": -16728065
+      }
+    ]
+  }
+}
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+You can observe the item color change in-game.
+
+
+
+
+
+
+
+
+
+
+
+Custom Creative Tabs
+Creative Tabs, also known as Item Groups, are the tabs in the creative inventory that store items. You can create your own creative tab to store your items in a separate tab. This is pretty useful if your mod adds a lot of items and you want to keep them organized in one location for your players to easily access.
+
+Creating the Creative Tab
+Adding a creative tab is pretty simple. Simply create a new static final field in your items class to store the creative tab and a resource key for it. You can then use FabricItemGroup.builder to create the tab and add items to it:
+
+
+public static final ResourceKey<CreativeModeTab> CUSTOM_CREATIVE_TAB_KEY = ResourceKey.create(BuiltInRegistries.CREATIVE_MODE_TAB.key(), Identifier.fromNamespaceAndPath(ExampleMod.MOD_ID, "creative_tab"));
+public static final CreativeModeTab CUSTOM_CREATIVE_TAB = FabricItemGroup.builder()
+		.icon(() -> new ItemStack(ModItems.GUIDITE_SWORD))
+		.title(Component.translatable("itemGroup.example-mod"))
+		.displayItems((params, output) -> {
+			output.accept(ModItems.SUSPICIOUS_SUBSTANCE);
+			output.accept(ModItems.POISONOUS_APPLE);
+
+			// The tab builder also accepts Blocks
+			output.accept(ModBlocks.CONDENSED_OAK_LOG);
+			output.accept(ModBlocks.PRISMARINE_LAMP);
+
+			// And custom ItemStacks
+			ItemStack stack = new ItemStack(Items.SEA_PICKLE);
+			stack.set(DataComponents.ITEM_NAME, Component.literal("Pickle Rick"));
+			stack.set(DataComponents.LORE, new ItemLore(List.of(Component.literal("I'm pickle riiick!!"))));
+			output.accept(stack);
+		})
+		.build();
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+
+// Register the group.
+Registry.register(BuiltInRegistries.CREATIVE_MODE_TAB, CUSTOM_CREATIVE_TAB_KEY, CUSTOM_CREATIVE_TAB);
+1
+2
+You should see a new tab is now in the creative inventory menu. However, it is untranslated - you must add a translation key to your translations file - similarly to how you translated your first item.
+
+Creative Tab without translation in creative menu
+
+Adding a Translation Key
+If you used Component.translatable for the title method of the creative tab builder, you will need to add the translation to your language file.
+
+
+{
+  "itemGroup.example-mod": "Example Mod"
+}
+1
+2
+3
+Now, as you can see, the creative tab should be correctly named:
+
+
+
+
+
+
+
+
+
+
+Custom Item Interactions
+Basic items can only go so far - eventually you will need an item that interacts with the world when it is used.
+
+There are some key classes you must understand before taking a look at the vanilla item events.
+
+InteractionResult
+An InteractionResult tells the game the status of the event, whether it was passed/ignored, failed or successful.
+
+A successful interaction can also be used to transform the stack in hand.
+
+
+ItemStack heldStack = user.getStackInHand(hand);
+heldStack.decrement(1);
+InteractionResult.SUCCESS.heldItemTransformedTo().success(heldStack);
+1
+2
+3
+Overridable Events
+Luckily, the Item class has many methods that can be overriden to add extra functionality to your items.
+
+INFO
+
+A great example of these events being used can be found in the Playing Sounds page, which uses the useOn event to play a sound when the player right clicks a block.
+
+Method	Information
+hurtEnemy	Ran when the player hits an entity.
+mineBlock	Ran when the player mines a block.
+inventoryTick	Ran every tick whilst the item is in an inventory.
+onCraftedPostProcess	Ran when the item is crafted.
+useOn	Ran when the player right clicks a block with the item.
+use	Ran when the player right clicks the item.
+The use() Event
+Let's say you want to make an item that summons a lightning bolt in front of the player - you would need to create a custom class.
+
+
+public class LightningStick extends Item {
+	public LightningStick(Properties properties) {
+		super(properties);
+	}
+
+}
+1
+2
+3
+4
+5
+6
+The use event is probably the most useful out of them all - you can use this event to spawn our lightning bolt, you should spawn it 10 blocks in front of the players facing direction.
+
+
+@Override
+public InteractionResult use(Level level, Player user, InteractionHand hand) {
+	// Ensure we don't spawn the lightning only on the client.
+	// This is to prevent desync.
+	if (level.isClientSide()) {
+		return InteractionResult.PASS;
+	}
+
+	BlockPos frontOfPlayer = user.blockPosition().relative(user.getDirection(), 10);
+
+	// Spawn the lightning bolt.
+	LightningBolt lightningBolt = new LightningBolt(EntityType.LIGHTNING_BOLT, level);
+	lightningBolt.setPos(frontOfPlayer.getCenter());
+	level.addFreshEntity(lightningBolt);
+
+	return InteractionResult.SUCCESS;
+}
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+As usual, you should register your item, add a model and texture.
+
+As you can see, the lightning bolt should spawn 10 blocks in front of you - the player.
+
+
+
+
+
+
+
+
+
+
+
+Custom Enchantment Effects
+Starting from version 1.21, custom enchantments in Minecraft use a "data-driven" approach. This makes it easier to add simple enchantments, like increasing attack damage, but more challenging to create complex ones. The process involves breaking down enchantments into effect components.
+
+An effect component contains the code that defines the special effects of an enchantment. Minecraft supports various default effects, such as item damage, knockback, and experience.
+
+TIP
+
+Be sure to check if the default Minecraft effects satisfy your needs by visiting the Minecraft Wiki's Enchantment Effect Components page. This guide assumes you understand how to configure "simple" data-driven enchantments and focuses on creating custom enchantment effects that aren't supported by default.
+
+Custom Enchantment Effects
+Start by creating an enchantment folder, and within it, create an effect folder. Within that, we'll create the LightningEnchantmentEffect record.
+
+Next, we can create a constructor and override the EnchantmentEntityEffect interface methods. We'll also create a CODEC variable to encode and decode our effect; you can read more about Codecs here.
+
+The bulk of our code will go into the apply() event, which is called when the criteria for your enchantment to work is met. We'll later configure this Effect to be called when an entity is hit, but for now, let's write simple code to strike the target with lightning.
+
+
+public record LightningEnchantmentEffect(LevelBasedValue amount) implements EnchantmentEntityEffect {
+	public static final MapCodec<LightningEnchantmentEffect> CODEC = RecordCodecBuilder.mapCodec(instance ->
+			instance.group(
+					LevelBasedValue.CODEC.fieldOf("amount").forGetter(LightningEnchantmentEffect::amount)
+			).apply(instance, LightningEnchantmentEffect::new)
+	);
+
+	@Override
+	public void apply(ServerLevel serverLevel, int level, EnchantedItemInUse context, Entity target, Vec3 pos) {
+		if (target instanceof LivingEntity victim) {
+			if (context.owner() != null && context.owner() instanceof Player player) {
+				float numStrikes = this.amount.calculate(level);
+
+				for (float i = 0; i < numStrikes; i++) {
+					BlockPos position = victim.blockPosition();
+					EntityType.LIGHTNING_BOLT.spawn(serverLevel, position, EntitySpawnReason.TRIGGERED);
+				}
+			}
+		}
+	}
+
+	@Override
+	public MapCodec<? extends EnchantmentEntityEffect> codec() {
+		return CODEC;
+	}
+}
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+Here, the amount variable indicates a value scaled to the level of the enchantment. We can use this to modify how effective the enchantment is based on level. In the code above, we are using the level of the enchantment to determine how many lightning strikes are spawned.
+
+Registering the Enchantment Effect
+Like every other component of your mod, we'll have to add this EnchantmentEffect to Minecraft's registry. To do so, add a class ModEnchantmentEffects (or whatever you want to name it) and a helper method to register the enchantment. Be sure to call the registerModEnchantmentEffects() in your main class, which contains the onInitialize() method.
+
+
+public class ModEnchantmentEffects {
+	public static MapCodec<LightningEnchantmentEffect> LIGHTNING_EFFECT = register("lightning_effect", LightningEnchantmentEffect.CODEC);
+
+	private static <T extends EnchantmentEntityEffect> MapCodec<T> register(String id, MapCodec<T> codec) {
+		return Registry.register(BuiltInRegistries.ENCHANTMENT_ENTITY_EFFECT_TYPE, Identifier.fromNamespaceAndPath(ExampleMod.MOD_ID, id), codec);
+	}
+
+	public static void registerModEnchantmentEffects() {
+		ExampleMod.LOGGER.info("Registering EnchantmentEffects for" + ExampleMod.MOD_ID);
+	}
+}
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+Creating the Enchantment
+Now we have an enchantment effect! The final step is to create an enchantment that applies our custom effect. We can do this with the data-driven enchantment system by simply adding a JSON file to our mod's resources.
+
+Create the JSON file in data/example-mod/enchantments folder. The name of this file will be the id of the enchantment: thundering.json will become example-mod:thundering.
+
+INFO
+
+For more details about the file format, check out Minecraft Wiki - Enchantment definition.
+
+To quickly generate a custom enchantment, you can use the Misode generator.
+
+For this example we will use the following enchantment definition to add the thundering enchantment using our custom lightning_effect:
+
+
+{
+  "anvil_cost": 5,
+  "description": {
+    "translate": "enchantment.example-mod.thundering"
+  },
+  "effects": {
+    "minecraft:post_attack": [
+      {
+        "affected": "victim",
+        "effect": {
+          "type": "example-mod:lightning_effect",
+          "amount": {
+            "type": "minecraft:linear",
+            "base": 0.4,
+            "per_level_above_first": 0.2
+          }
+        },
+        "enchanted": "attacker"
+      }
+    ]
+  },
+  "max_cost": {
+    "base": 1,
+    "per_level_above_first": 15
+  },
+  "max_level": 3,
+  "min_cost": {
+    "base": 1,
+    "per_level_above_first": 10
+  },
+  "slots": [
+    "hand"
+  ],
+  "supported_items": "#minecraft:enchantable/weapon",
+  "weight": 10
+}
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+You should also add translations to your en_us.json file to give your enchantment a readable name:
+
+
+"enchantment.example-mod.thundering": "Thundering",
+1
+You should now have a working custom enchantment effect! Test it by enchanting a weapon with the enchantment and hitting a mob. An example is given in the following video:
+
+
+
+
+
+
+
+
+
+
+
+Custom Data Components
+As your items grow more complex, you may find yourself needing to store custom data associated with each item. The game allows you to store persistent data within an ItemStack, and as of 1.20.5 the way we do that is by using Data Components.
+
+Data Components replace NBT data from previous versions with structured data types which can be applied to an ItemStack to store persistent data about that stack. Data components are namespaced, meaning we can implement our own data components to store custom data about an ItemStack and access it later. A full list of the vanilla data components can be found on this Minecraft wiki page.
+
+Along with registering custom components, this page covers the general usage of the components API, which also applies to vanilla components. You can see and access the definitions of all vanilla components in the DataComponents class.
+
+Registering a Component
+As with anything else in your mod you will need to register your custom component using a DataComponentType. This component type takes a generic argument containing the type of your component's value. We will be focusing on this in more detail further down when covering basic and advanced components.
+
+Choose a sensible class to place this in. For this example we're going to make a new package called component and a class to contain all of our component types called ModComponents. Make sure you call ModComponents.initialize() in your mod's initializer.
+
+
+public class ModComponents {
+	protected static void initialize() {
+		ExampleMod.LOGGER.info("Registering {} components", ExampleMod.MOD_ID);
+		// Technically this method can stay empty, but some developers like to notify
+		// the console, that certain parts of the mod have been successfully initialized
+	}
+}
+1
+2
+3
+4
+5
+6
+7
+This is the basic template to register a component type:
+
+
+public static final DataComponentType<?> MY_COMPONENT_TYPE = Registry.register(
+    BuiltInRegistries.DATA_COMPONENT_TYPE,
+    Identifier.fromNamespaceAndPath(ExampleMod.MOD_ID, "my_component"),
+    DataComponentType.<?>builder().persistent(null).build()
+);
+1
+2
+3
+4
+5
+There are a few things here worth noting. On the first and fourth lines, you can see a ?. This will be replaced with the type of your component's value. We'll fill this in soon.
+
+Secondly, you must provide an Identifier containing the intended ID of your component. This is namespaced with your mod's ID.
+
+Lastly, we have a DataComponentType.Builder that creates the actual DataComponentType instance that's being registered. This contains another crucial detail we will need to discuss: your component's Codec. This is currently null but we will also fill it in soon.
+
+Basic Data Components
+Basic data components (like minecraft:damage) consist of a single data value, such as an int, float, boolean or String.
+
+As an example, let's create an Integer value that will track how many times the player has right-clicked while holding our item. Let's update our component registration to the following:
+
+
+public static final DataComponentType<Integer> CLICK_COUNT_COMPONENT = Registry.register(
+		BuiltInRegistries.DATA_COMPONENT_TYPE,
+		Identifier.fromNamespaceAndPath(ExampleMod.MOD_ID, "click_count"),
+		DataComponentType.<Integer>builder().persistent(Codec.INT).build()
+);
+1
+2
+3
+4
+5
+You can see that we're now passing <Integer> as our generic type, indicating that this component will be stored as a single int value. For our codec, we are using the provided ExtraCodecs.POSITIVE_INT codec. We can get away with using basic codecs for simple components like this, but more complex scenarios might require a custom codec (this will be covered briefly later on).
+
+If you start the game, you should be able to enter a command like this:
+
+ command showing the custom component
+
+When you run the command, you should receive the item containing the component. However, we are not currently using our component to do anything useful. Let's start by reading the value of the component in a way we can see.
+
+Reading Component Value
+Let's add a new item which will increase the counter each time it is right clicked. You should read the Custom Item Interactions page which will cover the techniques we will use in this guide.
+
+
+public class CounterItem extends Item {
+	public CounterItem(Properties properties) {
+		super(properties);
+	}
+
+}
+1
+2
+3
+4
+5
+6
+Remember as usual to register the item in your ModItems class.
+
+
+public static final Item COUNTER = register("counter", CounterItem::new, new Item.Properties());
+1
+We're going to add some tooltip code to display the current value of the click count when we hover over our item in the inventory. We can use the get() method on our ItemStack to get our component value like so:
+
+
+int count = stack.get(ModComponents.CLICK_COUNT_COMPONENT);
+1
+This will return the current component value as the type we defined when we registered our component. We can then use this value to add a tooltip entry. Add this line to the appendHoverText method in the CounterItem class:
+
+
+public void appendHoverText(ItemStack stack, TooltipContext context, TooltipDisplay displayComponent, Consumer<Component> textConsumer, TooltipFlag type) {
+  int count = stack.get(ModComponents.CLICK_COUNT_COMPONENT);
+  textConsumer.accept(Component.translatable("item.example-mod.counter.info", count).withStyle(ChatFormatting.GOLD));
+}
+1
+2
+3
+4
+WARNING
+
+As of 1.21.5, appendHoverText has been deprecated. It is now recommended to implement TooltipProvider as such. This will require the creation of a custom component class.
+
+
+public record ComponentWithTooltip(int clickCount) implements TooltipProvider {
+	@Override
+	public void addToTooltip(TooltipContext tooltip, Consumer<Component> textConsumer, TooltipFlag type, DataComponentGetter components) {
+		textConsumer.accept(Component.translatable("item.example-mod.counter.info", this.clickCount).withStyle(ChatFormatting.GOLD));
+	}
+}
+1
+2
+3
+4
+5
+6
+Then, you can register the TooltipProvider via ComponentTooltipAppenderRegistry. This is called in onInitialize in the ModInitializer.
+
+
+ComponentTooltipAppenderRegistry.addAfter(DataComponents.DAMAGE, ModComponents.COMPONENT_WITH_TOOLTIP);
+1
+Alternatively, you can use ItemTooltipCallback to replace appendHoverText. This is called in onInitializeClient in the ClientModInitializer.
+
+
+ItemTooltipCallback.EVENT.register((stack, context, type, tooltip) -> {
+	Integer count = stack.get(ModComponents.CLICK_COUNT_COMPONENT);
+
+	if (count != null) {
+		tooltip.add(Component.translatable("item.example-mod.counter.info", count).withStyle(ChatFormatting.GOLD));
+	}
+});
+1
+2
+3
+4
+5
+6
+7
+Don't forget to update your lang file (/assets/example-mod/lang/en_us.json) and add these two lines:
+
+
+{
+  "item.example-mod.counter": "Counter",
+  "item.example-mod.counter.info": "Used %1$s times"
+}
+1
+2
+3
+4
+Start up the game and run this command to give yourself a new Counter item with a count of 5.
+
+
+/give @p example-mod:counter[example-mod:click_count=5]
+1
+When you hover over this item in your inventory, you should see the count displayed in the tooltip!
+
+Tooltip showing "Used 5 times"
+
+However, if you give yourself a new Counter item without the custom component, the game will crash when you hover over the item in your inventory. You should see an error like this in the crash report:
+
+
+java.lang.NullPointerException: Cannot invoke "java.lang.Integer.intValue()" because the return value of "net.minecraft.world.item.ItemStack.get(net.minecraft.core.component.DataComponentType)" is null
+        at com.example.docs.item.custom.CounterItem.appendHoverText(LightningStick.java:45)
+        at net.minecraft.world.item.ItemStack.getTooltipLines(ItemStack.java:767)
+1
+2
+3
+As expected, since the ItemStack doesn't currently contain an instance of our custom component, calling stack.get() with our component type will return null.
+
+There are three solutions we can use to address this problem.
+
+Setting a Default Component Value
+When you register your item and pass a Item.Properties object to your item constructor, you can also provide a list of default components that are applied to all new items. If we go back to our ModItems class, where we register the CounterItem, we can add a default value for our custom component. Add this so that new items display a count of 0.
+
+
+public static final Item COUNTER = register(
+		"counter",
+		CounterItem::new,
+		new Item.Properties()
+				// Initialize the click count component with a default value of 0
+				.component(ModComponents.CLICK_COUNT_COMPONENT, 0)
+);
+1
+2
+3
+4
+5
+6
+7
+When a new item is created, it will automatically apply our custom component with the given value.
+
+WARNING
+
+Using commands, it is possible to remove a default component from an ItemStack. You should refer to the next two sections to properly handle a scenario where the component is not present on your item.
+
+Reading with a Default Value
+In addition, when reading the component value, we can use the getOrDefault() method on our ItemStack object to return a specified default value if the component is not present on the stack. This will safeguard against any errors resulting from a missing component. We can adjust our tooltip code like so:
+
+
+int count = stack.getOrDefault(ModComponents.CLICK_COUNT_COMPONENT, 0);
+1
+As you can see, this method takes two arguments: our component type like before, and a default value to return if the component is not present.
+
+Checking if a Component Exists
+You can also check for the existence of a specific component on an ItemStack using the has() method. This takes the component type as an argument and returns true or false depending on whether the stack contains that component.
+
+
+boolean exists = stack.has(ModComponents.CLICK_COUNT_COMPONENT);
+1
+Fixing the Error
+We're going to go with the third option. So along with adding a default component value, we'll also check if the component is present on the stack and only show the tooltip if it is.
+
+
+public void appendHoverText(ItemStack stack, TooltipContext context, TooltipDisplay displayComponent, Consumer<Component> textConsumer, TooltipFlag type) {
+	if (stack.has(ModComponents.CLICK_COUNT_COMPONENT)) {
+		int count = stack.get(ModComponents.CLICK_COUNT_COMPONENT);
+		textConsumer.accept(Component.translatable("item.example-mod.counter.info", count).withStyle(ChatFormatting.GOLD));
+	}
+}
+1
+2
+3
+4
+5
+6
+7
+Start the game again and hover over the item without the component, you should see that it displays "Used 0 times" and no longer crashes the game.
+
+Tooltip showing "Used 0 times"
+
+Try giving yourself a Counter with our custom component removed. You can use this command to do so:
+
+
+/give @p example-mod:counter[!example-mod:click_count]
+1
+When hovering over this item, the tooltip should be missing.
+
+Counter item with no tooltip
+
+Updating Component Value
+Now let's try updating our component value. We're going to increase the click count each time we use our Counter item. To change the value of a component on an ItemStack we use the set() method like so:
+
+
+stack.set(ModComponents.CLICK_COUNT_COMPONENT, newValue);
+1
+This takes our component type and the value we want to set it to. In this case it will be our new click count. This method also returns the old value of the component (if one is present) which may be useful in some situations. For example:
+
+
+int oldValue = stack.set(ModComponents.CLICK_COUNT_COMPONENT, newValue);
+1
+Let's set up a new use() method to read the old click count, increase it by one, and then set the updated click count.
+
+
+public InteractionResult use(Level level, Player user, InteractionHand hand) {
+	ItemStack stack = user.getItemInHand(hand);
+
+	// Don't do anything on the client
+	if (level.isClientSide()) {
+		return InteractionResult.SUCCESS;
+	}
+
+	// Read the current count and increase it by one
+	int count = stack.getOrDefault(ModComponents.CLICK_COUNT_COMPONENT, 0);
+	stack.set(ModComponents.CLICK_COUNT_COMPONENT, ++count);
+
+	return InteractionResult.SUCCESS;
+}
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+Now try starting the game and right-clicking with the Counter item in your hand. If you open up your inventory and look at the item again you should see that the usage number has gone up by the amount of times you've clicked it.
+
+Tooltip showing "Used 8 times"
+
+Removing Component Value
+You can also remove a component from your ItemStack if it is no longer needed. This is done by using the remove() method, which takes in your component type.
+
+
+stack.remove(ModComponents.CLICK_COUNT_COMPONENT);
+1
+This method also returns the value of the component before being removed, so you can also use it as follows:
+
+
+int oldCount = stack.remove(ModComponents.CLICK_COUNT_COMPONENT);
+1
+Advanced Data Components
+You may need to store multiple attributes in a single component. As a vanilla example, the minecraft:food component stores several values related to food, such as nutrition, saturation, eat_seconds and more. In this guide we'll refer to them as "composite" components.
+
+For composite components, you must create a record class to store the data. This is the type we'll register in our component type and what we'll read and write when interacting with an ItemStack. Start by making a new record class in the component package we made earlier.
+
+
+public record MyCustomComponent() {
+}
+1
+2
+Notice that there's a set of brackets after the class name. This is where we define the list of properties we want our component to have. Let's add a float and a boolean called temperature and burnt respectively.
+
+
+public record MyCustomComponent(float temperature, boolean burnt) {
+}
+1
+2
+Since we are defining a custom data structure, there won't be a pre-existing Codec for our use case like with the basic component. This means we're going to have to construct our own codec. Let's define one in our record class using a RecordCodecBuilder which we can reference once we register the component. For more details on using a RecordCodecBuilder you can refer to this section of the Codecs page.
+
+
+public static final Codec<MyCustomComponent> CODEC = RecordCodecBuilder.create(builder -> {
+	return builder.group(
+		Codec.FLOAT.fieldOf("temperature").forGetter(MyCustomComponent::temperature),
+		Codec.BOOL.optionalFieldOf("burnt", false).forGetter(MyCustomComponent::burnt)
+	).apply(builder, MyCustomComponent::new);
+});
+1
+2
+3
+4
+5
+6
+You can see that we are defining a list of custom fields based on the primitive Codec types. However, we are also telling it what our fields are called using fieldOf(), and then using forGetter() to tell the game which attribute of our record to populate.
+
+You can also define optional fields by using optionalFieldOf() and passing a default value as the second argument. Any fields not marked optional will be required when setting the component using /give so make sure you mark any optional arguments as such when creating your codec.
+
+Finally, we call apply() and pass our record's constructor. For more details on how to construct codecs and more advanced use cases, be sure to read the Codecs page.
+
+Registering a composite component is similar to before. We just pass our record class as the generic type, and our custom Codec to the codec() method.
+
+
+public static final DataComponentType<MyCustomComponent> MY_CUSTOM_COMPONENT = Registry.register(
+		BuiltInRegistries.DATA_COMPONENT_TYPE,
+		Identifier.fromNamespaceAndPath(ExampleMod.MOD_ID, "custom"),
+		DataComponentType.<MyCustomComponent>builder().persistent(MyCustomComponent.CODEC).build()
+);
+1
+2
+3
+4
+5
+Now start the game. Using the /give command, try applying the component. Composite component values are passed as an object enclosed with {}. If you put blank curly brackets, you'll see an error telling you that the required key temperature is missing.
+
+Give command showing missing key "temperature"
+
+Add a temperature value to the object using the syntax temperature:8.2. You can also optionally pass a value for burnt using the same syntax but either true or false. You should now see that the command is valid, and can give you an item containing the component.
+
+Valid give command showing both properties
+
+Getting, Setting and Removing Advanced Components
+Using the component in code is the same as before. Using stack.get() will return an instance of your record class, which you can then use to read the values. Since records are read-only, you will need to create a new instance of your record to update the values.
+
+
+// read values of component
+MyCustomComponent comp = stack.get(ModComponents.MY_CUSTOM_COMPONENT);
+float temp = comp.temperature();
+boolean burnt = comp.burnt();
+
+// set new component values
+stack.set(ModComponents.MY_CUSTOM_COMPONENT, new MyCustomComponent(8.4f, true));
+
+// check for component
+if (stack.contains(ModComponents.MY_CUSTOM_COMPONENT)) {
+    // do something
+}
+
+// remove component
+stack.remove(ModComponents.MY_CUSTOM_COMPONENT);
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+You can also set a default value for a composite component by passing a component object to your Item.Properties. For example:
+
+
+public static final Item COUNTER = register(
+    "counter",
+    CounterItem::new,
+    new Item.Properties().component(ModComponents.MY_CUSTOM_COMPONENT, new MyCustomComponent(0.0f, false))
+);
+1
+2
+3
+4
+5
+Now you can store custom data on an ItemStack. Use responsibly!
+

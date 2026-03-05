@@ -1,0 +1,996 @@
+Codecs
+Codec is a system for easily serializing Java objects, and is included in Mojang's DataFixerUpper (DFU) library, which is included with Minecraft. In a modding context they can be used as an alternative to GSON and Jankson when reading and writing custom JSON files, though they're starting to become more and more relevant, as Mojang is rewriting a lot of old code to use Codecs.
+
+Codecs are used in conjunction with another API from DFU, DynamicOps. A codec defines the structure of an object, while dynamic ops are used to define a format to be serialized to and from, such as JSON or NBT. This means any codec can be used with any dynamic ops, and vice versa, allowing for great flexibility.
+
+Using Codecs
+Serializing and Deserializing
+The basic usage of a codec is to serialize and deserialize objects to and from a specific format.
+
+Since a few vanilla classes already have codecs defined, we can use those as an example. Mojang has also provided us with two dynamic ops classes by default, JsonOps and NbtOps, which tend to cover most use cases.
+
+Now, let's say we want to serialize a BlockPos to JSON and back. We can do this using the codec statically stored at BlockPos.CODEC with the Codec#encodeStart and Codec#parse methods, respectively.
+
+
+BlockPos pos = new BlockPos(1, 2, 3);
+
+// Serialize the BlockPos to a JsonElement
+DataResult<JsonElement> result = BlockPos.CODEC.encodeStart(JsonOps.INSTANCE, pos);
+1
+2
+3
+4
+When using a codec, values are returned in the form of a DataResult. This is a wrapper that can represent either a success or a failure. We can use this in several ways: If we just want our serialized value, DataResult#result will simply return an Optional containing our value, while DataResult#resultOrPartial also lets us supply a function to handle any errors that may have occurred. The latter is particularly useful for custom datapack resources, where we'd want to log errors without causing issues elsewhere.
+
+So let's grab our serialized value and turn it back into a BlockPos:
+
+
+// When actually writing a mod, you'll want to properly handle empty Optionals of course
+JsonElement json = result.resultOrPartial(LOGGER::error).orElseThrow();
+
+// Here we have our JSON value, which should correspond to `[1, 2, 3]`,
+// as that's the format used by the BlockPos codec.
+LOGGER.info("Serialized BlockPos: {}", json);
+
+// Now we'll deserialize the JsonElement back into a BlockPos
+DataResult<BlockPos> result = BlockPos.CODEC.parse(JsonOps.INSTANCE, json);
+
+// Again, we'll just grab our value from the result
+BlockPos pos = result.resultOrPartial(LOGGER::error).orElseThrow();
+
+// And we can see that we've successfully serialized and deserialized our BlockPos!
+LOGGER.info("Deserialized BlockPos: {}", pos);
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+Built-in Codecs
+As mentioned earlier, Mojang has already defined codecs for several vanilla and standard Java classes, including but not limited to BlockPos, BlockState, ItemStack, Identifier, Component, and regex Patterns. Codecs for Mojang's own classes are usually found as static fields named CODEC on the class itself, while most others are kept in the Codecs class. It should also be noted that all vanilla registries contain a method to get a Codec, for example, you can use BuiltInRegistries.BLOCK.byNameCodec() to get a Codec<Block> which serializes to the block id and back and a holderByNameCodec() to get a Codec<Holder<Block>>.
+
+The Codec API itself also contains some codecs for primitive types, such as Codec.INT and Codec.STRING. These are available as statics on the Codec class, and are usually used as the base for more complex codecs, as explained below.
+
+Building Codecs
+Now that we've seen how to use codecs, let's take a look at how we can build our own. Suppose we have the following class, and we want to deserialize instances of it from JSON files:
+
+
+public class CoolBeansClass {
+
+    private final int beansAmount;
+    private final Item beanType;
+    private final List<BlockPos> beanPositions;
+
+    public CoolBeansClass(int beansAmount, Item beanType, List<BlockPos> beanPositions) {...}
+
+    public int getBeansAmount() { return this.beansAmount; }
+    public Item getBeanType() { return this.beanType; }
+    public List<BlockPos> getBeanPositions() { return this.beanPositions; }
+}
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+The corresponding JSON file might look something like this:
+
+
+{
+  "beans_amount": 5,
+  "bean_type": "beanmod:mythical_beans",
+  "bean_positions": [
+    [1, 2, 3],
+    [4, 5, 6]
+  ]
+}
+1
+2
+3
+4
+5
+6
+7
+8
+We can make a codec for this class by putting together multiple smaller codecs into a larger one. In this case, we'll need one for each field:
+
+a Codec<Integer>
+a Codec<Item>
+a Codec<List<BlockPos>>
+We can get the first one from the aforementioned primitive codecs in the Codec class, specifically Codec.INT. While the second one can be obtained from the BuiltInRegistries.ITEM registry, which has a byNameCodec() method that returns a Codec<Item>. We don't have a default codec for List<BlockPos>, but we can make one from BlockPos.CODEC.
+
+Lists
+Codec#listOf can be used to create a list version of any codec:
+
+
+Codec<List<BlockPos>> listCodec = BlockPos.CODEC.listOf();
+1
+It should be noted that codecs created in this way will always deserialize to an ImmutableList. If you need a mutable list instead, you can make use of xmap to convert to one during deserialization.
+
+Merging Codecs for Record-Like Classes
+Now that we have separate codecs for each field, we can combine them into one codec for our class using a RecordCodecBuilder. This assumes that our class has a constructor containing every field we want to serialize, and that every field has a corresponding getter method. This makes it perfect to use in conjunction with records, but it can also be used with regular classes.
+
+Let's take a look at how to create a codec for our CoolBeansClass:
+
+
+public static final Codec<CoolBeansClass> CODEC = RecordCodecBuilder.create(instance -> instance.group(
+    Codec.INT.fieldOf("beans_amount").forGetter(CoolBeansClass::getBeansAmount),
+    BuiltInRegistries.ITEM.byNameCodec().fieldOf("bean_type").forGetter(CoolBeansClass::getBeanType),
+    BlockPos.CODEC.listOf().fieldOf("bean_positions").forGetter(CoolBeansClass::getBeanPositions)
+    // Up to 16 fields can be declared here
+).apply(instance, CoolBeansClass::new));
+1
+2
+3
+4
+5
+6
+Each line in the group specifies a codec, a field name, and a getter method. The Codec#fieldOf call is used to convert the codec into a map codec, and the forGetter call specifies the getter method used to retrieve the value of the field from an instance of the class. Meanwhile, the apply call specifies the constructor used to create new instances. Note that the order of the fields in the group should be the same as the order of the arguments in the constructor.
+
+You can also use Codec#optionalFieldOf in this context to make a field optional, as explained in the Optional Fields section.
+
+MapCodec, Not to Be Confused With Codec<Map>
+Calling Codec#fieldOf will convert a Codec<T> into a MapCodec<T>, which is a variant, but not direct implementation of Codec<T>. MapCodecs, as their name suggests are guaranteed to serialize into a key to value map, or its equivalent in the DynamicOps used. Some functions may require one over a regular codec.
+
+This particular way of creating a MapCodec essentially boxes the value of the source codec inside a map, with the given field name as the key. For example, a Codec<BlockPos> when serialized into JSON would look like this:
+
+
+[1, 2, 3]
+1
+But when converted into a MapCodec<BlockPos> using BlockPos.CODEC.fieldOf("pos"), it would look like this:
+
+
+{
+  "pos": [1, 2, 3]
+}
+1
+2
+3
+While the most common use for map codecs is to be merged with other map codecs to construct a codec for a full class worth of fields, as explained in the Merging Codecs for Record-like Classes section above, they can also be turned back into regular codecs using MapCodec#codec, which will retain the same behavior of boxing their input value.
+
+Optional Fields
+Codec#optionalFieldOf can be used to create an optional map codec. This will, when the specified field is not present in the container during deserialization, either be deserialized as an empty Optional or a specified default value.
+
+
+// Without a default value
+MapCodec<Optional<BlockPos>> optionalCodec = BlockPos.CODEC.optionalFieldOf("pos");
+
+// With a default value
+MapCodec<BlockPos> optionalCodec = BlockPos.CODEC.optionalFieldOf("pos", BlockPos.ZERO);
+1
+2
+3
+4
+5
+Do note that if the field is present, but the value is invalid, the field fails to deserialize at all if the field value is invalid.
+
+Constants, Constraints, and Composition
+Unit
+MapCodec.unitCodec can be used to create a codec that always deserializes to a constant value, regardless of the input. When serializing, it will do nothing.
+
+
+Codec<Integer> theMeaningOfCodec = MapCodec.unitCodec(42);
+1
+Numeric Ranges
+Codec.intRange and its pals, Codec.floatRange and Codec.doubleRange can be used to create a codec that only accepts number values within a specified inclusive range. This applies to both serialization and deserialization.
+
+
+// Can't be more than 2
+Codec<Integer> amountOfFriendsYouHave = Codec.intRange(0, 2);
+1
+2
+Pair
+Codec.pair merges two codecs, Codec<A> and Codec<B>, into a Codec<Pair<A, B>>. Keep in mind it only works properly with codecs that serialize to a specific field, such as converted MapCodecs or record codecs. The resulting codec will serialize to a map combining the fields of both codecs used.
+
+For example, running this code:
+
+
+// Create two separate boxed codecs
+Codec<Integer> firstCodec = Codec.INT.fieldOf("i_am_number").codec();
+Codec<Boolean> secondCodec = Codec.BOOL.fieldOf("this_statement_is_false").codec();
+
+// Merge them into a pair codec
+Codec<Pair<Integer, Boolean>> pairCodec = Codec.pair(firstCodec, secondCodec);
+
+// Use it to serialize data
+DataResult<JsonElement> result = pairCodec.encodeStart(JsonOps.INSTANCE, Pair.of(23, true));
+1
+2
+3
+4
+5
+6
+7
+8
+9
+Will output this JSON:
+
+
+{
+  "i_am_number": 23,
+  "this_statement_is_false": true
+}
+1
+2
+3
+4
+Either
+Codec.either combines two codecs, Codec<A> and Codec<B>, into a Codec<Either<A, B>>. The resulting codec will, during deserialization, attempt to use the first codec, and only if that fails, attempt to use the second one. If the second one also fails, the error of the second codec will be returned.
+
+Maps
+For processing maps with arbitrary keys, such as HashMaps, Codec.unboundedMap can be used. This returns a Codec<Map<K, V>> for a given Codec<K> and Codec<V>. The resulting codec will serialize to a JSON object or the equivalent for the current dynamic ops.
+
+Due to limitations of JSON and NBT, the key codec used must serialize to a string. This includes codecs for types that aren't strings themselves, but do serialize to them, such as Identifier.CODEC. See the example below:
+
+
+// Create a codec for a map of Identifiers to integers
+Codec<Map<Identifier, Integer>> mapCodec = Codec.unboundedMap(Identifier.CODEC, Codec.INT);
+
+// Use it to serialize data
+DataResult<JsonElement> result = mapCodec.encodeStart(JsonOps.INSTANCE, Map.of(
+    Identifier.fromNamespaceAndPath("example", "number"), 23,
+    Identifier.fromNamespaceAndPath("example", "the_cooler_number"), 42
+));
+1
+2
+3
+4
+5
+6
+7
+8
+This will output this JSON:
+
+
+{
+  "example:number": 23,
+  "example:the_cooler_number": 42
+}
+1
+2
+3
+4
+As you can see, this works because Identifier.CODEC serializes directly to a string value. A similar effect can be achieved for simple objects that don't serialize to strings by using xmap & friends to convert them.
+
+Mutually Convertible Types
+xmap
+Say we have two classes that can be converted to each other, but don't have a parent-child relationship. For example, a vanilla BlockPos and Vec3d. If we have a codec for one, we can use Codec#xmap to create a codec for the other by specifying a conversion function for each direction.
+
+BlockPos already has a codec, but let's pretend it doesn't. We can create one for it by basing it on the codec for Vec3d like this:
+
+
+Codec<BlockPos> blockPosCodec = Vec3d.CODEC.xmap(
+    // Convert Vec3d to BlockPos
+    vec -> new BlockPos(vec.x, vec.y, vec.z),
+    // Convert BlockPos to Vec3d
+    pos -> new Vec3d(pos.getX(), pos.getY(), pos.getZ())
+);
+
+// When converting an existing class (`X` for example)
+// to your own class (`Y`) this way, it may be nice to
+// add `toX` and static `fromX` methods to `Y` and use
+// method references in your `xmap` call.
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+flatComapMap, comapFlatMap, and flatXMap
+Codec#flatComapMap, Codec#comapFlatMap and flatXMap are similar to xmap, but they allow one or both of the conversion functions to return a DataResult. This is useful in practice because a specific object instance may not always be valid for conversion.
+
+Take for example vanilla Identifiers. While all Identifiers can be turned into strings, not all strings are valid Identifiers, so using xmap would mean throwing ugly exceptions when the conversion fails. Because of this, its built-in codec is actually a comapFlatMap on Codec.STRING, nicely illustrating how to use it:
+
+
+public class Identifier {
+    public static final Codec<Identifier> CODEC = Codec.STRING.comapFlatMap(
+        Identifier::validate, Identifier::toString
+    );
+
+    // ...
+
+    public static DataResult<Identifier> validate(String id) {
+        try {
+            return DataResult.success(Identifier.parse(id));
+        } catch (InvalidIdentifierException e) {
+            return DataResult.error("Not a valid identifier: " + id + " " + e.getMessage());
+        }
+    }
+
+    // ...
+}
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+While these methods are really helpful, their names are a bit confusing, so here's a table to help you remember which one to use:
+
+Method	A -> B always valid?	B -> A always valid?
+Codec<A>#xmap	Yes	Yes
+Codec<A>#comapFlatMap	No	Yes
+Codec<A>#flatComapMap	Yes	No
+Codec<A>#flatXMap	No	No
+Registry Dispatch
+Codec#dispatch let us define a registry of codecs and dispatch to a specific one based on the value of a field in the serialized data. This is very useful when deserializing objects that have different fields depending on their type, but still represent the same thing.
+
+For example, say we have an abstract Bean interface with two implementing classes: StringyBean and CountingBean. To serialize these with a registry dispatch, we'll need a few things:
+
+Separate codecs for every type of bean.
+A BeanType<T extends Bean> class or record that represents the type of bean, and can return the codec for it.
+A function on Bean to retrieve its BeanType<?>.
+A map or registry to map Identifiers to BeanType<?>s.
+A Codec<BeanType<?>> based on this registry. If you use a net.minecraft.core.Registry, one can be easily made using Registry#getCodec.
+With all of this, we can create a registry dispatch codec for beans:
+
+
+// The abstract type we want to create a codec for
+public interface Bean {
+	// Now we can create a codec for bean types based on the previously created registry.
+	Codec<Bean> BEAN_CODEC = BeanType.REGISTRY.byNameCodec()
+			// And based on that, here's our registry dispatch codec for beans!
+			// The first argument is the field name for the bean type.
+			// When left out, it will default to "type".
+			.dispatch("type", Bean::getType, BeanType::codec);
+
+	BeanType<?> getType();
+}
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+
+// A record to keep information relating to a specific
+// subclass of Bean, in this case only holding a Codec.
+public record BeanType<T extends Bean>(MapCodec<T> codec) {
+	// Create a registry to map identifiers to bean types
+	public static final Registry<BeanType<?>> REGISTRY = new MappedRegistry<>(
+			ResourceKey.createRegistryKey(Identifier.fromNamespaceAndPath("example", "bean_types")), Lifecycle.stable());
+}
+1
+2
+3
+4
+5
+6
+7
+
+// An implementing class of Bean, with its own codec.
+public class StringyBean implements Bean {
+	public static final MapCodec<StringyBean> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
+			Codec.STRING.fieldOf("stringy_string").forGetter(StringyBean::getStringyString)
+	).apply(instance, StringyBean::new));
+
+	private String stringyString;
+
+	// It is important to be able to retrieve the
+	// BeanType of a Bean from it's instance.
+	@Override
+	public BeanType<?> getType() {
+		return BeanTypes.STRINGY_BEAN;
+	}
+}
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+
+// Another implementation
+public class CountingBean implements Bean {
+	public static final MapCodec<CountingBean> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
+			Codec.INT.fieldOf("counting_number").forGetter(CountingBean::getCountingNumber)
+	).apply(instance, CountingBean::new));
+
+	private int countingNumber;
+
+	@Override
+	public BeanType<?> getType() {
+		return BeanTypes.COUNTING_BEAN;
+	}
+}
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+
+// An empty class to hold static references to all BeanTypes
+public class BeanTypes {
+	// Make sure to register the bean types and leave them accessible to
+	// the getType method in their respective subclasses.
+	public static final BeanType<StringyBean> STRINGY_BEAN = register("stringy_bean", new BeanType<>(StringyBean.CODEC));
+	public static final BeanType<CountingBean> COUNTING_BEAN = register("counting_bean", new BeanType<>(CountingBean.CODEC));
+
+	public static <T extends Bean> BeanType<T> register(String id, BeanType<T> beanType) {
+		return Registry.register(BeanType.REGISTRY, Identifier.fromNamespaceAndPath("example", id), beanType);
+	}
+}
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+
+// Now we can create a codec for bean types
+// based on the previously created registry
+Codec<BeanType<?>> beanTypeCodec = BeanType.REGISTRY.getCodec();
+
+// And based on that, here's our registry dispatch codec for beans!
+// The first argument is the field name for the bean type.
+// When left out, it will default to "type".
+Codec<Bean> beanCodec = beanTypeCodec.dispatch("type", Bean::getType, BeanType::codec);
+1
+2
+3
+4
+5
+6
+7
+8
+Our new codec will serialize beans to JSON like this, grabbing only fields that are relevant to their specific type:
+
+
+{
+  "type": "example:stringy_bean",
+  "stringy_string": "This bean is stringy!"
+}
+1
+2
+3
+4
+
+{
+  "type": "example:counting_bean",
+  "counting_number": 42
+}
+1
+2
+3
+4
+Recursive Codecs
+Sometimes it is useful to have a codec that uses itself to decode specific fields, for example when dealing with certain recursive data structures. In vanilla code, this is used for Component objects, which may store other Components as children. Such a codec can be constructed using Codec#recursive.
+
+For example, let's try to serialize a singly-linked list. This way of representing lists consists of a bunch of nodes that hold both a value and a reference to the next node in the list. The list is then represented by its first node, and traversing the list is done by following the next node until none remain. Here is a simple implementation of nodes that store integers.
+
+
+public record ListNode(int value, ListNode next) {}
+1
+We can't construct a codec for this by ordinary means, because what codec would we use for the next field? We would need a Codec<ListNode>, which is what we are in the middle of constructing! Codec#recursive lets us achieve that using a magic-looking lambda:
+
+
+Codec<ListNode> codec = Codec.recursive(
+  "ListNode", // a name for the codec
+  selfCodec -> {
+    // Here, `selfCodec` represents the `Codec<ListNode>`, as if it was already constructed
+    // This lambda should return the codec we wanted to use from the start,
+    // that refers to itself through `selfCodec`
+    return RecordCodecBuilder.create(instance ->
+      instance.group(
+        Codec.INT.fieldOf("value").forGetter(ListNode::value),
+         // the `next` field will be handled recursively with the self-codec
+        Codecs.createStrictOptionalFieldCodec(selfCodec, "next", null).forGetter(ListNode::next)
+      ).apply(instance, ListNode::new)
+    );
+  }
+);
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+A serialized ListNode may then look like this:
+
+
+{
+  "value": 2,
+  "next": {
+    "value": 3,
+    "next": {
+      "value": 5
+    }
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+Data Attachments
+The Data Attachment API is a recent and experimental addition to Fabric API. It allows developers to easily attach arbitrary data to Entities, Block Entities, Levels, and Chunks. The attached data can be stored and synced through Codecs and Stream Codecs, so you should familiarize yourself with those before using it.
+
+Creating a Data Attachment
+You'll start with a call to AttachmentRegistry.create. The following example creates a basic Data Attachment that does not sync or persist across restarts.
+
+
+public static final AttachmentType<String> EXAMPLE_STRING_ATTACHMENT = AttachmentRegistry.create(
+		Identifier.fromNamespaceAndPath("example-mod", "example_string_attachment") // The ID of your Attachment
+);
+1
+2
+3
+AttachmentRegistry contains a few methods for creating basic Data Attachments, including:
+
+AttachmentRegistry.create(): Creates a Data Attachment. Restarting the game will clear the Attachment.
+AttachmentRegistry.createPersistent(): Creates a Data Attachment that will persist between game restarts.
+AttachmentRegistry.createDefaulted(): Creates a Data Attachment with a default value, which you can read with getAttachedOrCreate. Restarting the game will clear the Attachment.
+The behavior of each method can also be replicated and further customized with the builder parameter of create, by applying the method chaining pattern.
+
+Syncing a Data Attachment
+If you need a Data Attachment to both be persistent and synced between server and clients, you can set that behavior using the create method, which allows configuration through a builder chain. For example:
+
+
+public static final AttachmentType<BlockPos> EXAMPLE_BLOCK_POS_ATTACHMENT = AttachmentRegistry.create(
+		Identifier.fromNamespaceAndPath("example-mod", "example_block_pos_attachment"),
+		builder -> builder
+			.initializer(() -> new BlockPos(0, 0, 0)) // The default value of the Attachment, if one has not been set.
+			.syncWith(
+				BlockPos.STREAM_CODEC,  // Dictates how to turn the data into a packet to send to clients.
+				AttachmentSyncPredicate.all() // Dictates who to send the data to.
+			)
+);
+1
+2
+3
+4
+5
+6
+7
+8
+9
+The example above synced to every player, but that might not fit your use case. Here are some other default predicates, but you can also build your own by referencing the AttachmentSyncPredicate class.
+
+AttachmentSyncPredicate.all(): Syncs the Attachment with all clients.
+AttachmentSyncPredicate.targetOnly(): Syncs the Attachment only with the target it is attached to. Note that the syncing can only happen if the target is a player.
+AttachmentSyncPredicate.allButTarget(): Syncs the Attachment with every client except the target it is attached to. Note that the exception can only apply if the target is a player.
+Persisting Data Attachments
+Data Attachments can also be set to persist across game restarts by calling the persistent method on the builder chain. It takes in a Codec so that the game knows how to serialize the data.
+
+They can be set to perdure even after the death or conversion of the target with the copyOnDeath method.
+
+
+public static final AttachmentType<BlockPos> EXAMPLE_PERSISTENT_ATTACHMENT = AttachmentRegistry.create(
+		Identifier.fromNamespaceAndPath("example-mod", "example_block_pos_attachment"),
+		builder -> builder
+			.initializer(() -> new BlockPos(0, 0, 0)) // The default value of the Attachment, if one has not been set.
+			.persistent(BlockPos.CODEC) // Dictates how this Attachment's data should be saved and loaded.
+			.copyOnDeath() // Dictates that this Attachment should persist even after the entity dies or converts.
+);
+1
+2
+3
+4
+5
+6
+7
+Reading From a Data Attachment
+Methods to read from a Data Attachment have been injected onto the Entity, BlockEntity, ServerLevel and ChunkAccess classes. Using it is as simple as calling one of the methods, which return the value of the attached data.
+
+
+// Checks if the given AttachmentType has attached data, returning a boolean.
+entity.hasAttached(EXAMPLE_STRING_ATTACHMENT);
+
+// Gets the data associated with the given AttachmentType, or `null` if it doesn't exist.
+entity.getAttached(EXAMPLE_STRING_ATTACHMENT);
+
+// Gets the data associated with the given AttachmentType, throwing a `NullPointerException` if it doesn't exist.
+entity.getAttachedOrThrow(EXAMPLE_STRING_ATTACHMENT);
+
+// Gets the data associated with the given AttachmentType, setting the value if it doesn't exist.
+entity.getAttachedOrSet(EXAMPLE_STRING_ATTACHMENT, "basic");
+entity.getAttachedOrSet(EXAMPLE_BLOCK_POS_ATTACHMENT, new BlockPos(0, 0, 0););
+
+// Gets the data associated with the given AttachmentType, returning the provided value if it doesn't exist.
+entity.getAttachedOrElse(EXAMPLE_STRING_ATTACHMENT, "basic");
+entity.getAttachedOrElse(EXAMPLE_BLOCK_POS_ATTACHMENT, new BlockPos(0, 0, 0););
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+Writing To a Data Attachment
+Methods to write to a Data Attachment have been injected onto the Entity, BlockEntity, ServerLevel and ChunkAccess classes. Calling one of the following methods will update the value of the attached data, and return the previous value (or null if there wasn't one).
+
+
+// Sets the data associated with the given AttachmentType, returning the previous value.
+entity.setAttached(EXAMPLE_STRING_ATTACHMENT, "new value");
+
+// Modifies the data associated with the given AttachmentType in place, returning the currently attached value. Note that currentValue is null if there is no previously attached data.
+entity.modifyAttached(EXAMPLE_STRING_ATTACHMENT, currentValue -> "The length was " + (currentValue == null ? 0 : currentValue.length()));
+
+// Removes the data associated with the given AttachmentType, returning the previous value.
+entity.removeAttached(EXAMPLE_STRING_ATTACHMENT);
+1
+2
+3
+4
+5
+6
+7
+8
+WARNING
+
+You should always use values with immutable types for Data Attachments, and you should also update them with API methods only. Doing otherwise may cause the Data Attachment to not persist or sync properly.
+
+Larger Attachments
+Although Data Attachments could store any form of data for which a Codec can be written, they shine when syncing individual values. This is because a Data Attachment is immutable: modifying part of its value (for example a single field of an object) means replacing it entirely, triggering a full sync to every client tracking it.
+
+Instead, you could achieve more intricate Attachments by splitting them into multiple fields, and organizing them with a helper class. For example, if you need two fields related to a player's stamina, you may build something like this:
+
+
+public class Stamina {
+	private static final AttachmentType<Integer> CURRENT_STAMINA = AttachmentRegistry.create(
+					Identifier.fromNamespaceAndPath("example-mod", "current_stamina"),
+					builder -> builder.syncWith(ByteBufCodecs.INT, AttachmentSyncPredicate.all())
+	);
+	private static final AttachmentType<Integer> MAX_STAMINA = AttachmentRegistry.create(
+					Identifier.fromNamespaceAndPath("example-mod", "max_stamina"),
+					builder -> builder.syncWith(ByteBufCodecs.INT, AttachmentSyncPredicate.all())
+	);
+
+	public static StaminaData get(AttachmentTarget target) {
+		return new StaminaData(target);
+	}
+
+	public record StaminaData(AttachmentTarget target) {
+		public int getCurrentStamina() {
+			return target.getAttachedOrElse(CURRENT_STAMINA, 0);
+		}
+
+		public int decrementCurrentStamina() {
+			return target.modifyAttached(CURRENT_STAMINA, currentStamina -> currentStamina-1);
+		}
+
+		public void setCurrentStamina(int value) {
+			target.setAttached(CURRENT_STAMINA, value);
+		}
+
+		public int getMaxStamina() {
+			return target.getAttachedOrElse(MAX_STAMINA, 0);
+		}
+
+		public void setMaxStamina(int value) {
+			target.setAttached(MAX_STAMINA, value);
+		}
+	}
+}
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+This helper class can then be used like so:
+
+
+Player player = getPlayer();
+Stamina.get(player).getCurrentStamina();
+
+
+
+
+
+
+
+
+
+
+
+Saved Data
+Saved Data is Minecraft's built-in solution to save data across sessions.
+
+The data is saved to disk and reloaded when the game is closed and opened again. This data is usually scoped (e.g. the level). Data is written to the disk as NBT and Codecs are used to serialize/deserialize this data.
+
+Let's look at a simple scenario where we need to save the number of blocks broken by the player. We can keep this count on the logical server.
+
+We can use the PlayerBlockBreakEvents.AFTER event with a simple static integer field to store this value and post it as a chat message.
+
+
+private static int blocksBroken = 0; // keeps track of the number of blocks broken
+
+PlayerBlockBreakEvents.AFTER.register((level, player, pos, state, blockEntity) -> {
+    blocksBroken++; // increment the counter each time a block is broken
+    player.displayClientMessage(Component.literal("Blocks broken: " + blocksBroken), false);
+});
+1
+2
+3
+4
+5
+6
+Now, when you break a block, you'll see a message with the count.
+
+Block Breaking
+
+If you restart Minecraft, load the world and start breaking blocks, you'll notice the count has reset. This is where we need Saved Data. We can then store this count, so that the next time you load the world, we can get the saved count and start incrementing it from that point.
+
+Saving Data
+SavedData is the main class responsible for managing the saving/loading of data. As it is an abstract class, you're expected to provide an implementation.
+
+Setting Up a Data Class
+Let's name our data class SavedBlockData and have it extend SavedData.
+
+This class will contain a field to keep track of the number of blocks broken as well as a method to get and a method to increment this number.
+
+
+public class SavedBlockData extends SavedData {
+	private int blocksBroken = 0;
+
+	public SavedBlockData() {
+	}
+
+	public int getBlocksBroken() {
+		return blocksBroken;
+	}
+
+	// :::set_dirty
+	public void incrementBlocksBroken() {
+		blocksBroken++;
+
+		// If saved data is not marked dirty, nothing will be saved when Minecraft closes.
+		setDirty();
+	}
+	// :::set_dirty
+}
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+For serializing and deserializing this data, we need to define a Codec. We can compose a Codec using various primitive Codecs provided by Minecraft.
+
+You'll need a constructor with an int argument to initialize the class.
+
+
+public SavedBlockData(int count) {
+	blocksBroken = count;
+}
+1
+2
+3
+Then we can build a Codec.
+
+
+private static final Codec<SavedBlockData> CODEC = Codec.INT.xmap(
+				SavedBlockData::new, // Create a new 'SavedBlockData' from the stored number.
+				SavedBlockData::getBlocksBroken // Return the number from the 'SavedBlockData' to be saved/
+);
+1
+2
+3
+4
+We should call setDirty() when data is actually modified, so Minecraft knows it should be saved to the disk.
+
+
+public void incrementBlocksBroken() {
+	blocksBroken++;
+
+	// If saved data is not marked dirty, nothing will be saved when Minecraft closes.
+	setDirty();
+}
+1
+2
+3
+4
+5
+6
+Finally, we're required to have a SavedDataType that describes our saved data. The first argument corresponds to the name of the file that will be created in the data directory of the world.
+
+
+private static final SavedDataType<SavedBlockData> TYPE = new SavedDataType<>(
+				"saved_block_data", // The unique name for this saved data.
+				SavedBlockData::new, // If there's no 'SavedBlockData', yet create one and refresh fields.
+				CODEC, // The codec used for serialization/deserialization.
+				null // A data fixer, which is not needed here.
+);
+1
+2
+3
+4
+5
+6
+Accessing Saved Data
+As mentioned earlier, saved data can be associated with a scope like the current level. In this case, our data will be a part of the level data. We can get the DimensionDataStorage of the level to add and modify our data.
+
+We'll put this logic into a utility method.
+
+
+public static SavedBlockData getSavedBlockData(MinecraftServer server) {
+	// This could be either the overworld or another dimension.
+	ServerLevel level = server.getLevel(ServerLevel.OVERWORLD);
+
+	if (level == null) {
+		return new SavedBlockData(); // Return a new instance if the level is null.
+	}
+
+	// The first time the following 'computeIfAbsent' function is called, it creates a new 'SavedBlockData'
+	// instance and stores it inside the 'DimensionDataStorage'.
+	// Subsequent calls to 'computeIfAbsent' returns the saved 'SavedBlockData' NBT on disk to the Codec in our type,
+	// using the Codec to decode the NBT into our saved data.
+	return level.getDataStorage().computeIfAbsent(TYPE);
+}
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+Using Saved Data
+Now that we have everything set up, let's save some data.
+
+We can reuse the first scenario and instead of incrementing the field, we can call our incrementBlocksBroken from our SavedBlockData.
+
+
+PlayerBlockBreakEvents.AFTER.register((level, player, pos, state, blockEntity) -> {
+	MinecraftServer server = level.getServer();
+
+	if (server == null) {
+		return;
+	}
+
+	// Retrieve the saved block data from the server.
+	SavedBlockData savedData = SavedBlockData.getSavedBlockData(server);
+
+	savedData.incrementBlocksBroken(); // Increment the counter each time a block is broken.
+	player.displayClientMessage(Component.literal("Blocks broken: " + savedData.getBlocksBroken()), false);
+});
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+This should increment the value and save it to the disk.
+
+If you restart Minecraft, load the world and break a block, you'll see that the previously saved count is now incremented.
+
+If you go into the data directory of the world, you'll see a .dat file with the name of saved_block_data.dat. Opening this file in a NBT reader will show how our data is saved within.
