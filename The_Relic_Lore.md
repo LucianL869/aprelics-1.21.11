@@ -84,3 +84,40 @@ sickle - something to do with his powers, slightly combat oriented, not as much 
 creation - unsure but more benificial
 
 destruction - unsure but more violent
+
+
+
+
+TASKS - for gemini
+
+all active relic abilities will share the same use ability keybind already set up
+
+you can hold multiple relics in your inventory
+
+all relics only do anything when they are in their specific required slot (e.g. halo must be on head)
+
+If multiple relics are in the inventory and someone tries to use a relic ability, it doesnt work and they are punished (this effect already exists in HaloLogic but may need to be adjusted to be added to the other relics and also include them, also the dirt and button need to be removed from the relic list there because those where just for testing)
+
+ Verdant Halo may need to have slight adjustments
+
+ RELICS TO ADD - for gemini
+
+ NOTE: IF POSSIBLE, all the relics should work in a similar way to the already set up halo, and should have simillar aspects like sounds for use , on cooldown, and recharged, they should also have particles upon use and the same popups on screen
+ ALSO DO NOT WORK ON ANIMATIONS YET as i am just testing functionality, I know the models with by missing texture cubes, I will add models later
+
+ Name: The Tyrant's Anklet
+ Form: Boots, they will have a custom model, although when worn they will look like an anklet that moves with one leg, and also add a devil horns that move with the head and a tai that moves with the torso and sways
+ Abilities:
+ Passive (Authoritarian Presence): Grants the wearer Strength I but the effect is refered to as Tyrant's might. Hostile mobs with low health (e.g., below 25%) in a small radius around the player will flee in fear.
+ Active (Volcanic Slam): A keybind ability. When the use ability button is pressed, the player leaps into the air. Upon landing, they create a shockwave that deals damage and launches enemies into the air, briefly coating them in fire. This has a decent cooldown.
+
+ •
+ Name: The Reapers Scythe
+ •
+ Form: A grim scythe used as a weapon. The player has a faint particle effect of rot/spores. swings when used as a weapon, the player hold it in both hands when idle and while being held they cant hold anything in their offhand, when active ability is used they slam the rod of the staff on the ground for a second
+ •
+ Abilities:
+ ◦
+ Passive its a weapon, although it has the strength of an iron sword. (Spreading Rot): Any mob you hit is afflicted with a unique "Decay" status effect for a few seconds. It's similar to Wither but deals less damage and also applies a big Slowness effect, and cannot kill the player. After applying the Decay effect, The scythe can still be used as a weapon, but the decay effect cant be applied to the same creature within a minute after the effect wares off, the weilder does not see a cooldown for this though as this is a passive ability
+ ◦
+ Active (Revenge): A keybind ability. When activated, the next time you take damage from a mob or player, the damage is negated(unless over a certain amount, then the damage is not negated, but the attacker still gets damaged), and the attacking mob or player is instead dealt double that damage and afflicted with a longer-lasting Decay effect. This ability can only be "armed" once every 30 seconds or so. armor should still protect the attacking mob or player from some of the damage like usual
