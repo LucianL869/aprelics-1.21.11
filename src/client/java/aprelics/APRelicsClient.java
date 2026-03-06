@@ -19,6 +19,7 @@ public class APRelicsClient implements ClientModInitializer {
 
     @Override
     public void onInitializeClient() {
+        ModEvents.register();
         // This specific constructor (String, int, String) is the most reliable for 1.21.1
         abilityKey = KeyBindingHelper.registerKeyBinding(new KeyMapping(
                 "key.aprelics.use_relic",

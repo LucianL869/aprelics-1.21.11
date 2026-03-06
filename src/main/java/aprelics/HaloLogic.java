@@ -73,7 +73,7 @@ public class HaloLogic {
             long lastUse = COOLDOWN_MAP.get(player.getUUID());
             if (currentTime - lastUse < HEAL_COOLDOWN) {
                 long remaining = (HEAL_COOLDOWN - (currentTime - lastUse)) / 1000;
-                player.displayClientMessage(Component.literal("§6⏳ §eHalo is recharging... (" + remaining + "s)"), true);
+                player.displayClientMessage(Component.literal("§2⏳ §aHalo is recharging... (" + remaining + "s)"), true);
                 player.level().playSound(null, player.getX(), player.getY(), player.getZ(),
                         SoundEvents.WOODEN_BUTTON_CLICK_ON, SoundSource.PLAYERS, 0.8f, 0.5f);
                 return;
@@ -115,7 +115,7 @@ public class HaloLogic {
             COOLDOWN_MAP.put(player.getUUID(), currentTime);
             NOTIFIED_READY.put(player.getUUID(), false);
         } else {
-            player.displayClientMessage(Component.literal("§7[ §c! §7] No creature in sight!"), true);
+            player.displayClientMessage(Component.literal("§7[ §c! §7] §aNo creature in sight!"), true);
         }
     }
 

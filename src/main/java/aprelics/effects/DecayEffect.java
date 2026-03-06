@@ -10,27 +10,27 @@ import net.minecraft.server.level.ServerLevel;
 public class DecayEffect extends MobEffect {
 
     public DecayEffect() {
-        super(MobEffectCategory.HARMFUL, 0x484D48); // A dark, sickly green
+        super(MobEffectCategory.HARMFUL, 0x484D48); // Sickly green
     }
 
-    // 1.21.11 FIX: The signature now requires the ServerLevel
     @Override
     public boolean applyEffectTick(ServerLevel level, LivingEntity entity, int amplifier) {
-        // Apply slowness effect
-        entity.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 40, amplifier, false, false, true));
+        // 1. Add Slowness (Level 2 = Slowness III)
+        entity.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 40, 2, false, false, true));
 
-        // Do not deal damage if health is 1 or less
+        // 2. Damage Logic (Wither-like, but won't kill)
+        // If the entity has more than 1 health, damage them.
+        // This stops at 1.0 HP, preventing the effect from ever killing the target.
         if (entity.getHealth() > 1.0F) {
-            entity.hurtServer(level, entity.damageSources().magic(), 1.0F + amplifier);
+            entity.hurt(entity.damageSources().magic(), 1.0F);
         }
-        return true; // Return true to indicate the effect was applied
+
+        return true;
     }
 
-    // 1.21.11 FIX: Method renamed from isDurationEffectTick
     @Override
     public boolean shouldApplyEffectTickThisTick(int duration, int amplifier) {
-        // Ticks every 2 seconds (40 ticks)
-        int interval = 40;
-        return duration % interval == 0;
+        // Apply every 2 seconds (40 ticks) for a "slower" feel than Wither
+        return duration % 40 == 0;
     }
 }

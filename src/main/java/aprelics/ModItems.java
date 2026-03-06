@@ -1,30 +1,43 @@
 package aprelics;
 
 import aprelics.items.ReapersScytheItem;
-import aprelics.items.TyrantsAnkletItem;
+import aprelics.items.VerdantHaloItem;
 import net.minecraft.core.Registry;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.equipment.Equippable;
 
-import java.util.Objects;
+import java.util.function.Function;
 
 public class ModItems {
 
-    // FIX: Link the items to their specific custom classes!
-    public static final Item VERDANT_HALO = new aprelics.items.VerdantHaloItem(new Item.Properties().stacksTo(1));
-    public static final Item TYRANTS_ANKLET = new TyrantsAnkletItem(new Item.Properties().stacksTo(1));
-    public static final Item REAPERS_SCYTHE = new ReapersScytheItem(new Item.Properties().stacksTo(1));
+    // Define them as null initially
+    public static Item VERDANT_HALO;
+    public static Item TYRANTS_ANKLET;
+    public static Item REAPERS_SCYTHE;
 
     public static void register() {
-        // These look good, but make sure the strings match your .json filenames exactly!
-        Registry.register(BuiltInRegistries.ITEM, Objects.requireNonNull(Identifier.tryParse("aprelics:verdant_halo")), VERDANT_HALO);
-        Registry.register(BuiltInRegistries.ITEM, Objects.requireNonNull(Identifier.tryParse("aprelics:tyrants_anklet")), TYRANTS_ANKLET);
-        Registry.register(BuiltInRegistries.ITEM, Objects.requireNonNull(Identifier.tryParse("aprelics:reapers_scythe")), REAPERS_SCYTHE);
+        VERDANT_HALO = registerItem("verdant_halo", props ->
+                new VerdantHaloItem(props.stacksTo(1).component(DataComponents.EQUIPPABLE, Equippable.builder(EquipmentSlot.HEAD).build())));
 
-        // Utility registration
+        TYRANTS_ANKLET = registerItem("tyrants_anklet", props ->
+                new Item(props.stacksTo(1).component(DataComponents.EQUIPPABLE, Equippable.builder(EquipmentSlot.FEET).build())));
+
+        REAPERS_SCYTHE = registerItem("reapers_scythe", ReapersScytheItem::new);
+
         RelicUtil.registerRelic(VERDANT_HALO);
         RelicUtil.registerRelic(TYRANTS_ANKLET);
         RelicUtil.registerRelic(REAPERS_SCYTHE);
+    }
+
+    private static Item registerItem(String name, Function<Item.Properties, Item> itemFactory) {
+        ResourceKey<Item> key = ResourceKey.create(Registries.ITEM, Identifier.tryParse("aprelics:" + name));
+        Item.Properties props = new Item.Properties().setId(key);
+        return Registry.register(BuiltInRegistries.ITEM, key, itemFactory.apply(props));
     }
 }

@@ -121,3 +121,48 @@ If multiple relics are in the inventory and someone tries to use a relic ability
  Passive its a weapon, although it has the strength of an iron sword. (Spreading Rot): Any mob you hit is afflicted with a unique "Decay" status effect for a few seconds. It's similar to Wither but deals less damage and also applies a big Slowness effect, and cannot kill the player. After applying the Decay effect, The scythe can still be used as a weapon, but the decay effect cant be applied to the same creature within a minute after the effect wares off, the weilder does not see a cooldown for this though as this is a passive ability
  ◦
  Active (Revenge): A keybind ability. When activated, the next time you take damage from a mob or player, the damage is negated(unless over a certain amount, then the damage is not negated, but the attacker still gets damaged), and the attacking mob or player is instead dealt double that damage and afflicted with a longer-lasting Decay effect. This ability can only be "armed" once every 30 seconds or so. armor should still protect the attacking mob or player from some of the damage like usual
+
+
+
+Relic Mod Roadmap & Task List
+Phase 1: Ability Polish (Current Status: Near Completion)
+still need to add more relics, but moving away from this for the time being
+
+hase 2: The Display Case System
+[ ] Data Model: Create a RelicManager or Registry to link Item IDs to specific BlockState variations.
+
+[ ] Display Block: Implement the custom block (hardened, non-minable, use interaction).
+
+[ ] Interaction Logic:
+
+Check inventory.getFreeSlot().
+
+Grant Relic with "Fingerprint" NBT (aprelics:is_relic and relic_id).
+
+Trigger SoundEvents.GLASS_BREAK and glass particles.
+
+Remove the block.
+
+[ ] Global Broadcast: Implement the Title/Subtitle packet system and global sound notification.
+
+Phase 3: Relic Resurrection (The "Safety Net")
+[ ] Entity Listener: Register a server-side tick listener that monitors items with the aprelics:is_relic tag.
+
+[ ] Destruction Monitoring:
+
+Monitor for fire/lava/explosion damage.
+
+Monitor item.age to trigger just before the 6000-tick despawn.
+
+Monitor entity position for "Y < 0" (Void detection).
+
+[ ] Re-assignment Logic:
+
+Select a random online player from server.getPlayerList().getPlayers().
+
+Add relic to their inventory.
+
+Send a specific chat notification ("The [Name] has been returned to [Player] by the tides of fate").
+
+Phase 4: Expansion & Cleanup
+[ ] Relic Registry: Refactor all relic-related logic to use the RelicManager to avoid hard-coded IDs.
