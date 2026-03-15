@@ -14,7 +14,5 @@ public class VerdantHaloItem extends Item {
 
     @Override
     public void inventoryTick(ItemStack stack, ServerLevel level, Entity entity, @Nullable EquipmentSlot slot) {
-        // We leave this empty because your HaloLogic.java handles the
-        // passive healing via the ServerTickEvent.register() method!
     }
 }

@@ -33,9 +33,9 @@ public abstract class LivingEntityMixin {
             IPlayerData data = (IPlayerData) player;
 
             if (data.aprelics_getIsRevengeArmed()) {
-                // Check if the 5-second window is still active
+
                 if (data.aprelics_getRevengeDuration() > 0) {
-                    // Window is active: Trigger Revenge
+
                     data.aprelics_setIsRevengeArmed(false);
                     data.aprelics_setRevengeDuration(0); // Reset duration
 
@@ -51,7 +51,7 @@ public abstract class LivingEntityMixin {
                         player.level().playSound(null, player.blockPosition(), SoundEvents.ANVIL_LAND, SoundSource.PLAYERS, 1.0f, 0.5f);
                     }
                 } else {
-                    // Window expired, cleanup state
+
                     data.aprelics_setIsRevengeArmed(false);
                     data.aprelics_setRevengeDuration(0);
                 }

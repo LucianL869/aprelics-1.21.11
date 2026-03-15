@@ -16,12 +16,16 @@ import java.util.function.Function;
 
 public class ModItems {
 
-    // Define them as null initially
+    private static boolean isRegistered = false;
+
+
     public static Item VERDANT_HALO;
     public static Item TYRANTS_ANKLET;
     public static Item REAPERS_SCYTHE;
 
     public static void register() {
+        if (isRegistered) return;
+
         VERDANT_HALO = registerItem("verdant_halo", props ->
                 new VerdantHaloItem(props.stacksTo(1).component(DataComponents.EQUIPPABLE, Equippable.builder(EquipmentSlot.HEAD).build())));
 
@@ -33,6 +37,8 @@ public class ModItems {
         RelicUtil.registerRelic(VERDANT_HALO);
         RelicUtil.registerRelic(TYRANTS_ANKLET);
         RelicUtil.registerRelic(REAPERS_SCYTHE);
+
+        isRegistered = true;
     }
 
     private static Item registerItem(String name, Function<Item.Properties, Item> itemFactory) {

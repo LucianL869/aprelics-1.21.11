@@ -9,7 +9,7 @@ import java.util.concurrent.CompletableFuture;
 
 public class APRelicsLangProvider extends FabricLanguageProvider {
 
-    // 1.21.11 Constructor: Needs both Output and the Registry Lookup
+
     public APRelicsLangProvider(FabricDataOutput output, CompletableFuture<HolderLookup.Provider> registries) {
         super(output, registries);
     }
@@ -20,8 +20,5 @@ public class APRelicsLangProvider extends FabricLanguageProvider {
         translationBuilder.add(ModItems.VERDANT_HALO, "Verdant Halo");
         translationBuilder.add(ModItems.TYRANTS_ANKLET, "Tyrant's Anklet");
         translationBuilder.add(ModItems.REAPERS_SCYTHE, "Reaper's Scythe");
-
-        // You can also add a translation for your Item Group if you have one
-        // translationBuilder.add("itemGroup.aprelics.relics_group", "Ancient Relics");
     }
 }

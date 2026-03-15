@@ -38,7 +38,7 @@ public class ScytheLogic {
             return;
         }
 
-        // ARMING: Start the cooldown AND the duration window
+
         data.aprelics_setIsRevengeArmed(true);
         data.aprelics_setCooldown(800);        // 40s Cooldown
         data.aprelics_setRevengeDuration(200); // 10s Window of Opportunity

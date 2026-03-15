@@ -15,12 +15,8 @@ public class DecayEffect extends MobEffect {
 
     @Override
     public boolean applyEffectTick(ServerLevel level, LivingEntity entity, int amplifier) {
-        // 1. Add Slowness (Level 2 = Slowness III)
-        entity.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 40, 2, false, false, true));
 
-        // 2. Damage Logic (Wither-like, but won't kill)
-        // If the entity has more than 1 health, damage them.
-        // This stops at 1.0 HP, preventing the effect from ever killing the target.
+        entity.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 40, 2, false, false, true));
         if (entity.getHealth() > 1.0F) {
             entity.hurt(entity.damageSources().magic(), 1.0F);
         }
@@ -30,7 +26,6 @@ public class DecayEffect extends MobEffect {
 
     @Override
     public boolean shouldApplyEffectTickThisTick(int duration, int amplifier) {
-        // Apply every 2 seconds (40 ticks) for a "slower" feel than Wither
         return duration % 40 == 0;
     }
 }

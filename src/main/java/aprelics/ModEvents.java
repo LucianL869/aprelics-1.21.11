@@ -19,7 +19,7 @@ public class ModEvents {
             for (ServerPlayer player : server.getPlayerList().getPlayers()) {
                 IPlayerData data = (IPlayerData) player;
 
-                // 1. Tick down the Cooldown (as you already have)
+
                 int currentCooldown = data.aprelics_getCooldown();
                 if (currentCooldown > 0) {
                     data.aprelics_setCooldown(currentCooldown - 1);
@@ -33,12 +33,12 @@ public class ModEvents {
                     }
                 }
 
-                // 2. Tick down the Duration Window (The 5-second "Brace" period)
+
                 int currentDuration = data.aprelics_getRevengeDuration();
                 if (data.aprelics_getIsRevengeArmed() && currentDuration > 0) {
                     data.aprelics_setRevengeDuration(currentDuration - 1);
 
-                    // If window expires, disarm
+
                     if (currentDuration - 1 == 0) {
                         data.aprelics_setIsRevengeArmed(false);
                         player.displayClientMessage(Component.literal("Vengeance window closed.")

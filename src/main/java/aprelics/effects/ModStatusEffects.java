@@ -16,7 +16,6 @@ public class ModStatusEffects {
     public static final MobEffect DECAY = new DecayEffect();
 
     public static void register() {
-        // Use the 'of' method or look for 'tryParse' if your IDE suggests it
         Registry.register(BuiltInRegistries.MOB_EFFECT, Objects.requireNonNull(Identifier.tryParse("aprelics:tyrants_might")), TYRANTS_MIGHT);
         Registry.register(BuiltInRegistries.MOB_EFFECT, Objects.requireNonNull(Identifier.tryParse("aprelics:decay")), DECAY);
     }
@@ -25,7 +24,6 @@ public class ModStatusEffects {
         public TyrantsMightEffect() {
             super(MobEffectCategory.BENEFICIAL, 0xFFD700);
 
-            // Apply the same fix here
             this.addAttributeModifier(Attributes.ATTACK_DAMAGE,
                     java.util.Objects.requireNonNull(Identifier.tryParse("aprelics:tyrants_might_modifier")),
                     2.0,

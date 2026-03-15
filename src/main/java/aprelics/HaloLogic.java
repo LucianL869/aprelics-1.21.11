@@ -27,7 +27,7 @@ public class HaloLogic {
     public static void register() {
         net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents.END_SERVER_TICK.register(server -> {
             for (ServerPlayer player : server.getPlayerList().getPlayers()) {
-                // Passive effects are only applied if the halo is equipped in the correct slot
+
                 if (player.getItemBySlot(EquipmentSlot.HEAD).is(ModItems.VERDANT_HALO)) {
                     applyPassiveEffects(player);
                     checkCooldownNotification(player);
@@ -58,12 +58,12 @@ public class HaloLogic {
     }
 
     public static void tryHeal(ServerPlayer player) {
-        // Centralized check for multi-relic punishment
+
         if (!RelicUtil.canUseRelic(player)) {
             return;
         }
 
-        // Ensure the player is actually wearing the halo to use its ability
+
         if (!player.getItemBySlot(EquipmentSlot.HEAD).is(ModItems.VERDANT_HALO)) {
             return;
         }

@@ -59,7 +59,25 @@ public class AnkletLogic {
     }
 
     private static void applyPassiveEffects(ServerPlayer player) {
-        // ... (Keep your existing passive logic here)
+        player.addEffect(new MobEffectInstance(
+                BuiltInRegistries.MOB_EFFECT.wrapAsHolder(ModStatusEffects.TYRANTS_MIGHT),
+                40, 0, false, false, true
+        ));
+
+        AABB scanBox = new AABB(player.blockPosition()).inflate(8.0);
+        List<Monster> nearbyHostiles = player.level().getEntitiesOfClass(Monster.class, scanBox);
+
+        for (Monster mob : nearbyHostiles) {
+            if (mob.getHealth() < mob.getMaxHealth() * 0.25) {
+
+                boolean hasFleeGoal = mob.goalSelector.getAvailableGoals().stream()
+                        .anyMatch(wrapped -> wrapped.getGoal() instanceof FleeFromPlayerGoal);
+
+                if (!hasFleeGoal) {
+                    mob.goalSelector.addGoal(1, new FleeFromPlayerGoal(mob, player, 1.2, 10.0));
+                }
+            }
+        }
     }
 
     public static void executeSlamEffects(Player player) {
@@ -75,13 +93,13 @@ public class AnkletLogic {
             serverLevel.sendParticles(ParticleTypes.CLOUD,
                     player.getX(), player.getY() + 0.1, player.getZ(),
                     30, 0.8, 0.2, 0.8, 0.1);
-            serverLevel.sendParticles(ParticleTypes.POOF, 
+            serverLevel.sendParticles(ParticleTypes.POOF,
                     player.getX(), player.getY() + 0.1, player.getZ(),
                     10, 0.3, 0.1, 0.3, 0.1);
-            // Shockwave Particles: Spawning flames in a circle
+
             for (int i = 0; i < 360; i += 15) {
                 double angle = Math.toRadians(i);
-                double xOffset = Math.cos(angle) * 2.0; // Distance of the wave
+                double xOffset = Math.cos(angle) * 2.0;
                 double zOffset = Math.sin(angle) * 2.0;
 
                 serverLevel.sendParticles(ParticleTypes.FLAME,
@@ -98,11 +116,11 @@ public class AnkletLogic {
 
         for (Entity target : targets) {
             if (target instanceof LivingEntity living && target != player) {
-                // Calculate distance to knock back away from center
+
                 Vec3 knockbackDir = living.position().subtract(player.position()).normalize();
 
                 living.hurt(player.damageSources().explosion(player, player), 8.0f);
-                // Apply radial knockback: Upwards + outwards
+
                 living.setDeltaMovement(knockbackDir.x * 1.5, 1.0, knockbackDir.z * 1.5);
                 living.igniteForSeconds(3);
             }
@@ -113,7 +131,7 @@ public class AnkletLogic {
         long currentTime = System.currentTimeMillis();
         UUID uuid = player.getUUID();
 
-        // Cooldown Check
+
         if (COOLDOWN_MAP.containsKey(uuid)) {
             long lastUse = COOLDOWN_MAP.get(uuid);
             if (currentTime - lastUse < SLAM_COOLDOWN) {
@@ -125,16 +143,16 @@ public class AnkletLogic {
             }
         }
 
-        // --- ACTIVATION EFFECTS ---
 
-        // Popup Message
+
+
         player.displayClientMessage(Component.literal("§4☄ §cTyrant's Judgement Activated!").withStyle(ChatFormatting.RED), true);
 
-        // Activation Sound (Fire Charge use)
+
         player.level().playSound(null, player.getX(), player.getY(), player.getZ(),
                 SoundEvents.BLAZE_SHOOT, SoundSource.PLAYERS, 1.0f, 0.5f);
 
-        // --- LAUNCH LOGIC ---
+
         ((IPlayerData) player).aprelics_setIsVolcanicSlamming(false);
         double horizontalMultiplier = 2.5;
         Vec3 forward = player.getLookAngle();
@@ -144,7 +162,7 @@ public class AnkletLogic {
 
         ((IPlayerData) player).aprelics_setIsVolcanicSlamming(true);
 
-        // Update Cooldown State
+
         COOLDOWN_MAP.put(uuid, currentTime);
         NOTIFIED_READY.put(uuid, false);
     }

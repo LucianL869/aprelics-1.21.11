@@ -72,7 +72,7 @@ public abstract class PlayerMixin implements IPlayerData {
 
         if (this.aprelics_isVolcanicSlamming) {
 
-            // 1. THIS IS THE FIX: Send particles as a broadcast packet
+
             if (!player.level().isClientSide() && player.level().getGameTime() % 2 == 0) {
                 ServerLevel serverLevel = (ServerLevel) player.level();
                 serverLevel.sendParticles(ParticleTypes.FLAME,
@@ -80,12 +80,12 @@ public abstract class PlayerMixin implements IPlayerData {
                         3, 0.1, 0.1, 0.1, 0.05);
             }
 
-            // 2. Count ticks while airborne
+
             if (!player.onGround()) {
                 this.aprelics_airborneTicks++;
             }
 
-            // 3. Landing Logic
+
             if (player.onGround() && this.aprelics_airborneTicks >= 10) {
                 this.aprelics_isVolcanicSlamming = false;
                 this.aprelics_airborneTicks = 0;
@@ -101,7 +101,7 @@ public abstract class PlayerMixin implements IPlayerData {
 
     @Inject(method = "causeFallDamage", at = @At("HEAD"), cancellable = true)
     private void onFall(double d, float f, DamageSource damageSource, CallbackInfoReturnable<Boolean> cir) {
-        // If we are currently in the "slamming" state (in the air), negate all fall damage
+
         if (this.aprelics_isVolcanicSlamming) {
             cir.setReturnValue(false);
         }

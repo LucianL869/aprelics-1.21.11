@@ -18,7 +18,6 @@ public class ReapersScytheItem extends Item {
 
     private final Map<UUID, Long> decayCooldownMap = new HashMap<>();
 
-    // Cooldown is 60 seconds + 5 seconds (effect duration) = 65,000ms
     private static final long DECAY_TOTAL_COOLDOWN_MS = 65000;
 
     public ReapersScytheItem(Item.Properties properties) {
@@ -31,7 +30,7 @@ public class ReapersScytheItem extends Item {
             IPlayerData data = (IPlayerData) player;
 
             if (!data.aprelics_getIsRevengeArmed()) {
-                // These variables are now inside the correct scope
+
                 long currentTime = System.currentTimeMillis();
                 UUID targetId = target.getUUID();
 

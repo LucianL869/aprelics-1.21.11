@@ -1,13 +1,21 @@
 package aprelics;
 
+import aprelics.items.TyrantsAnkletItem;
+import aprelics.models.TyrantAnkletModel;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.KeyMapping;
 import com.mojang.blaze3d.platform.InputConstants;
+import net.minecraft.client.renderer.entity.state.HumanoidRenderState;
 import net.minecraft.resources.Identifier;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.item.ItemStack;
+import org.jetbrains.annotations.Nullable;
 import org.lwjgl.glfw.GLFW;
+import software.bernie.geckolib.animatable.client.GeoRenderProvider;
+import software.bernie.geckolib.renderer.GeoArmorRenderer;
 
 public class APRelicsClient implements ClientModInitializer {
 
@@ -19,8 +27,21 @@ public class APRelicsClient implements ClientModInitializer {
 
     @Override
     public void onInitializeClient() {
+
+
+
+        RenderBridge.ankletProvider = () -> new GeoRenderProvider() {
+            private GeoArmorRenderer<TyrantsAnkletItem, HumanoidRenderState> renderer;
+
+            public GeoArmorRenderer<TyrantsAnkletItem, HumanoidRenderState> getGeoArmorRenderer() {
+                if (this.renderer == null) {
+                    this.renderer = new GeoArmorRenderer<>(new TyrantAnkletModel());
+                }
+                return this.renderer;
+            }
+        };
+
         ModEvents.register();
-        // This specific constructor (String, int, String) is the most reliable for 1.21.1
         abilityKey = KeyBindingHelper.registerKeyBinding(new KeyMapping(
                 "key.aprelics.use_relic",
                 InputConstants.Type.KEYSYM,
@@ -36,4 +57,6 @@ public class APRelicsClient implements ClientModInitializer {
             }
         });
     }
+
+
 }

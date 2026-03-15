@@ -16,11 +16,10 @@ import static aprelics.ScytheLogic.handleScytheAbility;
 
 public record AbilityPacket() implements CustomPacketPayload {
 
-    // Using the 'Id' class which is standard for 1.21.1 CustomPacketPayloads
+
     public static final Type<AbilityPacket> ID = new Type<>(Identifier.fromNamespaceAndPath("aprelics", "ability_packet"));
 
-    // StreamCodec.unit is perfect here because we aren't sending any extra data (like coordinates),
-    // we are just sending the notification that the key was pressed.
+
     public static final StreamCodec<FriendlyByteBuf, AbilityPacket> CODEC = StreamCodec.unit(new AbilityPacket());
 
     @Override
@@ -35,13 +34,13 @@ public record AbilityPacket() implements CustomPacketPayload {
 
         int relicsInInventory = countRelicsInInventory(player);
 
-        // 1. Check Punishment (Multiple Relics in inventory)
+
         if (relicsInInventory > 1) {
             punish(player);
             return;
         }
 
-        // 2. Execute based on the CORRECT slot
+
         if (head.is(ModItems.VERDANT_HALO)) {
             tryHeal(player);
         } else if (feet.is(ModItems.TYRANTS_ANKLET)) {
