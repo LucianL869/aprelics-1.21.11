@@ -2,6 +2,8 @@ package aprelics.items;
 
 import aprelics.RelicUtil;
 import aprelics.RenderBridge;
+import aprelics.client.renderer.armor.TyrantAnkletRenderer;
+import com.google.common.base.Suppliers;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.AnimationState;
@@ -26,10 +28,10 @@ import software.bernie.geckolib.util.GeckoLibUtil;
 
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 public class TyrantsAnkletItem extends Item implements GeoItem {
-    private final AnimatableInstanceCache geoCache = GeckoLibUtil.createInstanceCache(this);
-
+    public AnimatableInstanceCache geoCache = GeckoLibUtil.createInstanceCache(this);
 
     private static final RawAnimation IDLE_ANIM = RawAnimation.begin().thenLoop("tail_idle");
     private static final RawAnimation WALK_ANIM = RawAnimation.begin().thenLoop("tail_walk");
@@ -39,8 +41,23 @@ public class TyrantsAnkletItem extends Item implements GeoItem {
     }
 
     @Override
-    public void registerControllers(AnimatableManager.ControllerRegistrar controllerRegistrar) {
-        controllerRegistrar.add(new AnimationController<>(state -> PlayState.CONTINUE));
+    public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
+        controllers.add(new AnimationController<>("Main",20,animationTest -> {
+            return animationTest.setAndContinue(IDLE_ANIM);
+        }));
+    }
+
+    @Override
+    public void createGeoRenderer(Consumer<GeoRenderProvider> consumer) {
+        consumer.accept(new GeoRenderProvider() {
+            private final Supplier<TyrantAnkletRenderer<?>> renderer = Suppliers.memoize(TyrantAnkletRenderer::new);
+
+            @Nullable
+            @Override
+            public TyrantAnkletRenderer<?> getGeoArmorRenderer(ItemStack itemstack, EquipmentSlot equipmentSlot) {
+                return this.renderer.get();
+            }
+        });
     }
 
     @Override
@@ -49,74 +66,37 @@ public class TyrantsAnkletItem extends Item implements GeoItem {
     }
 
     @Override
-    public void createGeoRenderer(Consumer<GeoRenderProvider> consumer) {
-        if (RenderBridge.ankletProvider != null) {
-            consumer.accept(RenderBridge.ankletProvider.getRenderer());
-        }
-    }
-
-    @Override
     public void inventoryTick(ItemStack stack, ServerLevel level, Entity entity, @Nullable EquipmentSlot slot) {
         if (entity instanceof Player player) {
 
-
             if (slot == EquipmentSlot.FEET) {
-
 
                 if (RelicUtil.countRelicsInInventory(player) == 1) {
 
-
                     player.addEffect(new MobEffectInstance(MobEffects.STRENGTH, 20, 0, false, false, true));
 
-
-
-
                     double radius = 6.0;
-
                     List<Mob> nearbyMonsters = level.getEntitiesOfClass(
 
                             Mob.class,
-
                             player.getBoundingBox().inflate(radius),
-
                             mob -> mob instanceof Monster
-
                     );
-
-
 
                     for (Mob monster : nearbyMonsters) {
 
-
-
                         if (monster.getHealth() / monster.getMaxHealth() <= 0.25f) {
 
-
-
                             Vec3 playerPos = player.position();
-
                             Vec3 monsterPos = monster.position();
-
                             Vec3 runDirection = monsterPos.subtract(playerPos).normalize().scale(8);
-
                             Vec3 targetPos = monsterPos.add(runDirection);
 
-
-
-
-
                             monster.getNavigation().moveTo(targetPos.x, targetPos.y, targetPos.z, 1.5);
-
                         }
-
                     }
-
                 }
-
             }
-
         }
-
     }
-
 }

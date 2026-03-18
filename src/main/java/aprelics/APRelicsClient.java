@@ -1,21 +1,33 @@
 package aprelics;
 
+import aprelics.client.renderer.armor.TyrantAnkletRenderer;
 import aprelics.items.TyrantsAnkletItem;
-import aprelics.models.TyrantAnkletModel;
+import aprelics.client.renderer.armor.TyrantAnkletRenderer;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.KeyMapping;
 import com.mojang.blaze3d.platform.InputConstants;
+import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
+import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.entity.state.HumanoidRenderState;
 import net.minecraft.resources.Identifier;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.BlockEntityType;
 import org.lwjgl.glfw.GLFW;
 import software.bernie.geckolib.animatable.client.GeoRenderProvider;
 import software.bernie.geckolib.renderer.GeoArmorRenderer;
 
-public class APRelicsClient implements ClientModInitializer {
+import java.util.function.BiConsumer;
 
+public final class APRelicsClient implements ClientModInitializer {
+    public static void registerRenderers(BiConsumer<EntityType<? extends Entity>, EntityRendererProvider> entityRenderers,
+                                         BiConsumer<BlockEntityType<? extends BlockEntity>, BlockEntityRendererProvider> blockEntityRenderers) {
+
+    }
     public static KeyMapping abilityKey;
 
     KeyMapping.Category ABILITYKEY = new KeyMapping.Category(
@@ -30,12 +42,6 @@ public class APRelicsClient implements ClientModInitializer {
         RenderBridge.ankletProvider = () -> new GeoRenderProvider() {
             private GeoArmorRenderer<TyrantsAnkletItem, HumanoidRenderState> renderer;
 
-            public GeoArmorRenderer<TyrantsAnkletItem, HumanoidRenderState> getGeoArmorRenderer() {
-                if (this.renderer == null) {
-                    this.renderer = new GeoArmorRenderer<>(new TyrantAnkletModel());
-                }
-                return this.renderer;
-            }
         };
 
         ModEvents.register();
