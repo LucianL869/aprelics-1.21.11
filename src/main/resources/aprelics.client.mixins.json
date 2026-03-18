@@ -1,6 +1,6 @@
 {
 	"required": true,
-	"package": "aprelics.mixin.client",
+	"package": "aprelics.mixins",
 	"compatibilityLevel": "JAVA_21",
 	"client": [
 		"ExampleClientMixin"

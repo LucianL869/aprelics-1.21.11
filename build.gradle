@@ -34,12 +34,11 @@ repositories {
 }
 
 loom {
-	splitEnvironmentSourceSets()
+	//splitEnvironmentSourceSets()
 
 	mods {
 		"aprelics" {
 			sourceSet sourceSets.main
-			sourceSet sourceSets.client
 		}
 	}
 

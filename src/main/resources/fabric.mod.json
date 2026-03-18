@@ -3,9 +3,9 @@
 	"id": "aprelics",
 	"version": "${version}",
 	"name": "APRelics",
-	"description": "This is an example description! Tell everyone what your mod is about!",
+	"description": "Adds the amazing relics for APSMP2!",
 	"authors": [
-		"Me!"
+		"Lucianl869"
 	],
 	"contact": {
 		"homepage": "https://fabricmc.net/",

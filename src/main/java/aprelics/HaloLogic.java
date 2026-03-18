@@ -36,7 +36,7 @@ public class HaloLogic {
         });
     }
 
-    private static void checkCooldownNotification(ServerPlayer player) {
+    static void checkCooldownNotification(ServerPlayer player) {
         UUID uuid = player.getUUID();
         if (COOLDOWN_MAP.containsKey(uuid)) {
             long lastUse = COOLDOWN_MAP.get(uuid);

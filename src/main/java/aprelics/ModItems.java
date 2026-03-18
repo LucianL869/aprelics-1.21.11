@@ -1,5 +1,6 @@
 package aprelics;
 
+import aprelics.items.BookStaffItem;
 import aprelics.items.ReapersScytheItem;
 import aprelics.items.VerdantHaloItem;
 import net.minecraft.core.Registry;
@@ -22,6 +23,8 @@ public class ModItems {
     public static Item VERDANT_HALO;
     public static Item TYRANTS_ANKLET;
     public static Item REAPERS_SCYTHE;
+    public static Item AMBRIA_CROWN;
+    public static Item BOOK_STAFF;
 
     public static void register() {
         if (isRegistered) return;
@@ -34,9 +37,17 @@ public class ModItems {
 
         REAPERS_SCYTHE = registerItem("reapers_scythe", ReapersScytheItem::new);
 
+        AMBRIA_CROWN = registerItem("ambria_crown", props ->
+                new Item(props.stacksTo(1).component(DataComponents.EQUIPPABLE, Equippable.builder(EquipmentSlot.HEAD).build())));
+
+        BOOK_STAFF = registerItem("book_staff", props ->
+                        new BookStaffItem(props.stacksTo(1)));
+
         RelicUtil.registerRelic(VERDANT_HALO);
         RelicUtil.registerRelic(TYRANTS_ANKLET);
         RelicUtil.registerRelic(REAPERS_SCYTHE);
+        RelicUtil.registerRelic(AMBRIA_CROWN);
+        RelicUtil.registerRelic(BOOK_STAFF);
 
         isRegistered = true;
     }
