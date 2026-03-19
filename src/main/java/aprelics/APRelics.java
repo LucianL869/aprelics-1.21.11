@@ -20,6 +20,7 @@ import net.minecraft.world.InteractionResult;
 import net.minecraft.world.item.ItemStack;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import software.bernie.geckolib.GeckoLib;
 
 import java.awt.print.Book;
 
@@ -27,10 +28,11 @@ public class APRelics implements ModInitializer {
     public static final String MOD_ID = "aprelics";
     public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
 
+
+
     @Override
     public void onInitialize() {
         LOGGER.info("Initializing APRelics for Minecraft 1.21.1...");
-
 
         ModItems.register();
         ModStatusEffects.register();
@@ -38,7 +40,6 @@ public class APRelics implements ModInitializer {
         HaloLogic.register();
         AnkletLogic.register();
         CrownLogic.register();
-
 
         PayloadTypeRegistry.playC2S().register(AbilityPacket.ID, AbilityPacket.CODEC);
 

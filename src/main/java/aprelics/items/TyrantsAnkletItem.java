@@ -1,15 +1,12 @@
 package aprelics.items;
 
 import aprelics.RelicUtil;
-import aprelics.RenderBridge;
-import aprelics.client.renderer.armor.TyrantAnkletRenderer;
+import aprelics.client.renderer.armor.TyrantsAnkletArmorRenderer;
 import com.google.common.base.Suppliers;
+import net.minecraft.client.model.HumanoidModel;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.effect.MobEffects;
-import net.minecraft.world.entity.AnimationState;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.EquipmentSlot;
-import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.*;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.effect.MobEffectInstance;
@@ -23,7 +20,7 @@ import software.bernie.geckolib.animatable.instance.AnimatableInstanceCache;
 import software.bernie.geckolib.animatable.manager.AnimatableManager;
 import software.bernie.geckolib.animation.AnimationController;
 import software.bernie.geckolib.animation.RawAnimation;
-import software.bernie.geckolib.animation.object.PlayState;
+import software.bernie.geckolib.renderer.GeoArmorRenderer;
 import software.bernie.geckolib.util.GeckoLibUtil;
 
 import java.util.List;
@@ -50,12 +47,15 @@ public class TyrantsAnkletItem extends Item implements GeoItem {
     @Override
     public void createGeoRenderer(Consumer<GeoRenderProvider> consumer) {
         consumer.accept(new GeoRenderProvider() {
-            private final Supplier<TyrantAnkletRenderer<?>> renderer = Suppliers.memoize(TyrantAnkletRenderer::new);
+            //private final Supplier<GeoArmorRenderer<TyrantsAnkletItem,?>> renderer = Suppliers.memoize(() -> new GeoArmorRenderer<>(TyrantsAnkletItem.this));
+            private GeoArmorRenderer<?,?> renderer;
 
-            @Nullable
             @Override
-            public TyrantAnkletRenderer<?> getGeoArmorRenderer(ItemStack itemstack, EquipmentSlot equipmentSlot) {
-                return this.renderer.get();
+            public @Nullable GeoArmorRenderer<?, ?> getGeoArmorRenderer(ItemStack itemStack, EquipmentSlot equipmentSlot) {
+                if(this.renderer == null)
+                    this.renderer = new TyrantsAnkletArmorRenderer ();
+
+                return this.renderer;
             }
         });
     }

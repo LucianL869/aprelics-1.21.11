@@ -1,8 +1,8 @@
 package aprelics;
 
-import aprelics.client.renderer.armor.TyrantAnkletRenderer;
+import aprelics.client.renderer.armor.TyrantsAnkletArmorRenderer;
 import aprelics.items.TyrantsAnkletItem;
-import aprelics.client.renderer.armor.TyrantAnkletRenderer;
+import aprelics.client.renderer.armor.TyrantsAnkletArmorRenderer;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;

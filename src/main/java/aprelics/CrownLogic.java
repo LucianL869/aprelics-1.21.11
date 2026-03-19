@@ -92,7 +92,7 @@ public class CrownLogic {
         if (!targets.isEmpty()) {
             for (LivingEntity target : targets) {
 
-                target.addEffect(new MobEffectInstance(MobEffects.INSTANT_HEALTH, 1, 0));
+                target.addEffect(new MobEffectInstance(MobEffects.INSTANT_HEALTH, 1, 5));
 
                 world.sendParticles(ParticleTypes.HAPPY_VILLAGER, target.getX(), target.getY() + 1, target.getZ(), 10, 0.2, 0.2, 0.2, 0.1);
 
