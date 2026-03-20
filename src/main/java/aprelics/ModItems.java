@@ -1,7 +1,8 @@
 package aprelics;
 
-import aprelics.items.BookStaffItem;
+//import aprelics.items.BookStaffItem;
 import aprelics.items.ReapersScytheItem;
+import aprelics.items.TyrantsAnkletItem;
 import aprelics.items.VerdantHaloItem;
 import net.minecraft.core.Registry;
 import net.minecraft.core.component.DataComponents;
@@ -11,6 +12,8 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.equipment.ArmorMaterials;
+import net.minecraft.world.item.equipment.ArmorType;
 import net.minecraft.world.item.equipment.Equippable;
 
 import java.util.function.Function;
@@ -33,15 +36,15 @@ public class ModItems {
                 new VerdantHaloItem(props.stacksTo(1).component(DataComponents.EQUIPPABLE, Equippable.builder(EquipmentSlot.HEAD).build())));
 
         TYRANTS_ANKLET = registerItem("tyrants_anklet", props ->
-                new Item(props.stacksTo(1).component(DataComponents.EQUIPPABLE, Equippable.builder(EquipmentSlot.FEET).build())));
+                new TyrantsAnkletItem(ArmorMaterials.COPPER, ArmorType.BOOTS, props));
 
         REAPERS_SCYTHE = registerItem("reapers_scythe", ReapersScytheItem::new);
 
         AMBRIA_CROWN = registerItem("ambria_crown", props ->
                 new Item(props.stacksTo(1).component(DataComponents.EQUIPPABLE, Equippable.builder(EquipmentSlot.HEAD).build())));
 
-        BOOK_STAFF = registerItem("book_staff", props ->
-                        new BookStaffItem(props.stacksTo(1)));
+//        BOOK_STAFF = registerItem("book_staff", props ->
+//                new BookStaffItem(props.stacksTo(1)));
 
         RelicUtil.registerRelic(VERDANT_HALO);
         RelicUtil.registerRelic(TYRANTS_ANKLET);
@@ -56,5 +59,18 @@ public class ModItems {
         ResourceKey<Item> key = ResourceKey.create(Registries.ITEM, Identifier.tryParse("aprelics:" + name));
         Item.Properties props = new Item.Properties().setId(key);
         return Registry.register(BuiltInRegistries.ITEM, key, itemFactory.apply(props));
+    }
+
+    public static <T extends Item> T register(String name, Function<Item.Properties, T> itemFactory, Item.Properties settings) {
+        // Create the item key.
+        ResourceKey<Item> itemKey = ResourceKey.create(Registries.ITEM, Identifier.fromNamespaceAndPath(APRelics.MOD_ID, name));
+
+        // Create the item instance.
+        T item = itemFactory.apply(settings.setId(itemKey));
+
+        // Register the item.
+        Registry.register(BuiltInRegistries.ITEM, itemKey, item);
+
+        return item;
     }
 }
