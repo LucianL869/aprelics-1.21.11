@@ -1,0 +1,9 @@
+{
+  "model": {
+    "type": "minecraft:special",
+    "base": "aprelics:item/tyrants_anklet",
+    "model": {
+      "type": "geckolib:geckolib"
+    }
+  }
+}
