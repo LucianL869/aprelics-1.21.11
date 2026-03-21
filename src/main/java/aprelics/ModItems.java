@@ -1,6 +1,6 @@
 package aprelics;
 
-//import aprelics.items.BookStaffItem;
+import aprelics.items.BookStaffItem;
 import aprelics.items.ReapersScytheItem;
 import aprelics.items.TyrantsAnkletItem;
 import aprelics.items.VerdantHaloItem;
@@ -43,8 +43,8 @@ public class ModItems {
         AMBRIA_CROWN = registerItem("ambria_crown", props ->
                 new Item(props.stacksTo(1).component(DataComponents.EQUIPPABLE, Equippable.builder(EquipmentSlot.HEAD).build())));
 
-//        BOOK_STAFF = registerItem("book_staff", props ->
-//                new BookStaffItem(props.stacksTo(1)));
+        BOOK_STAFF = registerItem("book_staff", props ->
+                new BookStaffItem(props.stacksTo(1)));
 
         RelicUtil.registerRelic(VERDANT_HALO);
         RelicUtil.registerRelic(TYRANTS_ANKLET);

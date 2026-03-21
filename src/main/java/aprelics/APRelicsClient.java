@@ -1,16 +1,19 @@
 package aprelics;
 
 import aprelics.client.renderer.armor.TyrantsAnkletArmorRenderer;
+import aprelics.client.renderer.projectile.BookProjectileRenderer;
 import aprelics.items.TyrantsAnkletItem;
 import aprelics.client.renderer.armor.TyrantsAnkletArmorRenderer;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
+import net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry;
 import net.minecraft.client.KeyMapping;
 import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
+import net.minecraft.client.renderer.entity.ThrownItemRenderer;
 import net.minecraft.client.renderer.entity.state.HumanoidRenderState;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.Entity;
@@ -37,7 +40,7 @@ public final class APRelicsClient implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
 
-
+        EntityRendererRegistry.register(ModEntities.BOOK_PROJECTILE, BookProjectileRenderer::new);
 
         RenderBridge.ankletProvider = () -> new GeoRenderProvider() {
             private GeoArmorRenderer<TyrantsAnkletItem, HumanoidRenderState> renderer;

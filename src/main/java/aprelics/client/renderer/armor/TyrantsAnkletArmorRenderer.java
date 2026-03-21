@@ -12,11 +12,27 @@ import software.bernie.geckolib.renderer.GeoArmorRenderer;
 import software.bernie.geckolib.renderer.base.GeoRenderState;
 import software.bernie.geckolib.renderer.layer.builtin.AutoGlowingGeoLayer;
 
+import java.util.List;
+
 public class TyrantsAnkletArmorRenderer <R extends HumanoidRenderState & GeoRenderState> extends GeoArmorRenderer<TyrantsAnkletItem, R> {
     public TyrantsAnkletArmorRenderer() {
-        // super(new TyrantAnkletModel());
         super(new DefaultedItemGeoModel<>(Identifier.fromNamespaceAndPath(APRelics.MOD_ID, "armor/tyrants_anklet")));
-        //if you want a glowing layer do something like this
         withRenderLayer(new AutoGlowingGeoLayer<>(this));
+    }
+
+    @Override
+    public List<ArmorSegment> getSegmentsForSlot(R renderState, EquipmentSlot slot) {
+
+        if (slot == EquipmentSlot.FEET) {
+
+            return List.of(
+                    ArmorSegment.HEAD,
+                    ArmorSegment.CHEST,
+                    ArmorSegment.RIGHT_FOOT
+            );
+        }
+
+
+        return super.getSegmentsForSlot(renderState, slot);
     }
 }

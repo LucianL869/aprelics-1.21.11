@@ -18,7 +18,7 @@ public class StaffCommands {
                     StaffWarpTracker.X = pos.getX() + 0.5; // +0.5 centers them on the block
                     StaffWarpTracker.Y = pos.getY();
                     StaffWarpTracker.Z = pos.getZ() + 0.5;
-                    StaffWarpTracker.WORLD = world.dimension().registry().toString();
+                    StaffWarpTracker.WORLD = world.dimension().identifier().toString();
 
                     context.getSource().sendSuccess(() -> Component.literal("§b[Relics] Library Anchor set to: " + pos.toShortString()), true);
                     return 1;

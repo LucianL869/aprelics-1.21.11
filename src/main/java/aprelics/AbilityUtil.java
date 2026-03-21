@@ -3,7 +3,7 @@ package aprelics;
 import aprelics.AnkletLogic;
 import aprelics.HaloLogic;
 import aprelics.ScytheLogic;
-//import aprelics.items.BookStaffItem;
+import aprelics.items.BookStaffItem;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.item.ItemStack;
@@ -33,8 +33,8 @@ public class AbilityUtil {
         else if (headItem.is(ModItems.AMBRIA_CROWN)) {
             CrownLogic.tryCrownAbility(player);
         }
-//        else if (mainHandItem.is(ModItems.BOOK_STAFF)) {
-//            ((BookStaffItem)mainHandItem.getItem()).cycleMode(player, mainHandItem);
-//        }
+        else if (mainHandItem.is(ModItems.BOOK_STAFF)) {
+            ((BookStaffItem)mainHandItem.getItem()).cycleMode(player, mainHandItem);
+        }
     }
 }

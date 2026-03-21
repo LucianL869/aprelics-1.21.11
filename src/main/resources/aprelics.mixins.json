@@ -3,6 +3,7 @@
 	"package": "aprelics.mixins",
 	"compatibilityLevel": "JAVA_21",
 	"mixins": [
+		"HandSwingMixin",
 		"PlayerMixin",
 		"LivingEntityMixin"
 	],
