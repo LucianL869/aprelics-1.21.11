@@ -1,6 +1,8 @@
 package aprelics;
 
+import aprelics.blocks.entity.ModBlockEntities;
 import aprelics.client.renderer.armor.TyrantsAnkletArmorRenderer;
+import aprelics.client.renderer.block.DisplayCaseRenderer;
 import aprelics.client.renderer.item.BookStaffRenderer;
 import aprelics.client.renderer.projectile.BookProjectileRenderer;
 import aprelics.items.BookStaffItem;
@@ -10,10 +12,12 @@ import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
+import net.fabricmc.fabric.api.client.rendering.v1.BlockEntityRendererRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry;
 import net.minecraft.client.KeyMapping;
 import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
+import net.minecraft.client.renderer.blockentity.BlockEntityRenderers;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.entity.ThrownItemRenderer;
 import net.minecraft.client.renderer.entity.state.HumanoidRenderState;
@@ -55,6 +59,8 @@ public final class APRelicsClient implements ClientModInitializer {
         RenderBridge.bookStaffProvider = () -> new GeoRenderProvider() {
             private GeoItemRenderer<BookStaffItem> renderer;
         };
+
+        BlockEntityRenderers.register(ModBlockEntities.DISPLAY_CASE_ENTITY, DisplayCaseRenderer::new);
 
         ModEvents.register();
         abilityKey = KeyBindingHelper.registerKeyBinding(new KeyMapping(

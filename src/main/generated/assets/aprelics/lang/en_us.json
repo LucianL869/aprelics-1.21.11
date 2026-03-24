@@ -4,8 +4,11 @@
   "item.aprelics.reapers_scythe": "Reaper's Scythe",
   "item.aprelics.ambria_crown": "The Verdantian Crown",
   "item.aprelics.book_staff": "The Lorekeeper's Staff",
+  "item.aprelics.grow_horn":"The Abundant Cornucopia",
   "effect.aprelics.tyrants_might": "Tyrant's Might",
   "effect.aprelics.decay": "Decay",
+
+  "block.aprelics.display_case": "Display Case",
 
   "key.category.aprelics.ability": "AP Relics",
   "key.aprelics.use_relic": "Use Relic Ability"

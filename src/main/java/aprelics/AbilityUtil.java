@@ -4,6 +4,7 @@ import aprelics.AnkletLogic;
 import aprelics.HaloLogic;
 import aprelics.ScytheLogic;
 import aprelics.items.BookStaffItem;
+import aprelics.items.GrowHornItem;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.item.ItemStack;
@@ -35,6 +36,9 @@ public class AbilityUtil {
         }
         else if (mainHandItem.is(ModItems.BOOK_STAFF)) {
             ((BookStaffItem)mainHandItem.getItem()).cycleMode(player, mainHandItem);
+        }
+        else if (mainHandItem.is(ModItems.GROW_HORN)) {
+            ((GrowHornItem)mainHandItem.getItem()).useAbility(player);
         }
     }
 }

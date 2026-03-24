@@ -166,3 +166,67 @@ Send a specific chat notification ("The [Name] has been returned to [Player] by 
 
 Phase 4: Expansion & Cleanup
 [ ] Relic Registry: Refactor all relic-related logic to use the RelicManager to avoid hard-coded IDs.
+
+
+
+
+
+
+
+1 Creation- make a certain amount of blocks of a block of choice that you click
+
+
+
+2 Destruction- destroy a certain amount of blocks
+
+
+
+3 Abundance- crops around you grow at 2 times speed, is a cornucopia that you can blow like a goat horn once a day, when this is done storm clouds made of particles appear a decent bit above the player and it briefly rains food
+
+
+
+4 Stealth- true invisibility and silences steps or other sounds made, effect ends if you attack an entity or fire a bow
+
+
+
+5 Peace- when activated any hostile mobs next to you immediately loose hostility even if they normally would for a certain duration, and if a player attacks the person who used peace then the damage will come back to the attacker
+
+
+
+6 Size - when ability is used, makes player scale tiny, when used again returns scale to normal
+
+
+
+7 Adventure- automatically traverse hills and terrain like stairs and when used in a boat it can make the boat fly (but it’s the same speed as a normal boat)
+
+
+
+8 Sight- goggles that grant x-raying for short duration once per day
+
+
+
+9 Tracking- when input username the compass points to that person no matter where they are. gives you a general distance that you have to your target and the closer you get the more specific it’ll become (like from “over 1,000 blocks to “within 500 blocks” etc etc) and/or the compass could also tell you how many players are within a certain distance of the target (basically tell you if your target has company)
+
+
+
+10 Friendship- when worn villagers give best deals
+
+
+
+11 Frailty- temporarily lowers target’s max hp without doing damage
+
+
+
+12 Hunger- half whatever the target’s hunger level was at the moment
+
+
+
+13 Climbing- can climb any vertical surface as if it was a ladder
+
+
+
+14 Frost- (melee) on first hit the target gets slower, second hit they get even
+
+slower and take a bit more damage,
+
+and third hit will freeze them in place temporarily and cause them to freeze like in powdered snow

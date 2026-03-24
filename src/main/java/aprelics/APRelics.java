@@ -1,8 +1,10 @@
 package aprelics;
 
+import aprelics.blocks.entity.ModBlockEntities;
 import aprelics.client.renderer.projectile.BookProjectileRenderer;
 import aprelics.effects.ModStatusEffects;
 import aprelics.items.BookStaffItem;
+import aprelics.items.GrowHornItem;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
@@ -38,13 +40,15 @@ public class APRelics implements ModInitializer {
 
         ModItems.register();
         ModStatusEffects.register();
+        ModBlocks.initialize();
+        ModBlockEntities.registerBlockEntities();
+        ModEntities.registerModEntities();
 
         HaloLogic.register();
         AnkletLogic.register();
         CrownLogic.register();
         BookStaffItem.register();
-
-        ModEntities.registerModEntities();
+        GrowHornItem.register();
 
 
         PayloadTypeRegistry.playC2S().register(AbilityPacket.ID, AbilityPacket.CODEC);
