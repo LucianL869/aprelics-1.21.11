@@ -1,6 +1,9 @@
 package aprelics.items;
 
 import aprelics.*;
+import aprelics.client.renderer.armor.TyrantsAnkletArmorRenderer;
+import aprelics.client.renderer.item.BookStaffRenderer;
+import com.google.common.base.Suppliers;
 import com.mojang.math.Transformation;
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
@@ -27,14 +30,29 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.Vec3;
+import org.jetbrains.annotations.Nullable;
 import org.joml.Vector3f;
+import software.bernie.geckolib.animatable.GeoItem;
+import software.bernie.geckolib.animatable.client.GeoRenderProvider;
+import software.bernie.geckolib.animatable.instance.AnimatableInstanceCache;
+import software.bernie.geckolib.animatable.manager.AnimatableManager;
+import software.bernie.geckolib.animation.AnimationController;
+import software.bernie.geckolib.animation.RawAnimation;
+import software.bernie.geckolib.renderer.GeoArmorRenderer;
+import software.bernie.geckolib.renderer.GeoItemRenderer;
+import software.bernie.geckolib.util.GeckoLibUtil;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 
-public class BookStaffItem extends Item {
+
+public class BookStaffItem extends Item implements GeoItem {
+    private static final RawAnimation IDLE_ANIM = RawAnimation.begin().thenLoop("idle");;
+    private final AnimatableInstanceCache geoCache = GeckoLibUtil.createInstanceCache(this);
     private static final HashMap<UUID, Long> COOLDOWN_MAP = new HashMap<>();
     private static final HashMap<UUID, Boolean> NOTIFIED_READY = new HashMap<>();
     private static final long MAZE_COOLDOWN = 120000; // 60 seconds
@@ -100,12 +118,42 @@ public class BookStaffItem extends Item {
             {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}
     };
 
-    public BookStaffItem(Properties properties) { super(properties); }
+    public BookStaffItem(Properties properties) {
+        super(properties); GeoItem.registerSyncedAnimatable(this);
+    }
+
+    @Override
+    public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
+        controllers.add(new AnimationController<>("Main", 20, animationTest -> {
+            return animationTest.setAndContinue(IDLE_ANIM);
+        }));
+    }
+
+    @Override
+    public AnimatableInstanceCache getAnimatableInstanceCache() {
+        return this.geoCache;
+    }
+
+    @Override
+    public void createGeoRenderer(Consumer<GeoRenderProvider> consumer) {
+
+        consumer.accept(new GeoRenderProvider() {
+            private GeoItemRenderer<?> renderer;
+                public @Nullable GeoItemRenderer<?> getGeoItemRenderer(
+                    ItemStack itemStack) {
+                    if (this.renderer == null)
+                        this.renderer = new BookStaffRenderer();
+
+                    return this.renderer;
+
+                }
+
+        });
+    }
 
     @Override
     public InteractionResult use(Level level, Player player, InteractionHand hand) {
-        // This ONLY starts the bow animation.
-        // The Mixin will see "isUsingItem = true" and stay quiet.
+
         player.startUsingItem(hand);
         return InteractionResult.SUCCESS;
     }
@@ -122,10 +170,10 @@ public class BookStaffItem extends Item {
     }
 
     private void shootBookProjectile(Player player, Level level) {
-        // Create our custom entity
+
         BookProjectile book = new BookProjectile(level, player);
 
-        // Standard arrow shooting logic
+
         book.shootFromRotation(player, player.getXRot(), player.getYRot(), 0.0F, 3.0F, 1.0F);
         level.addFreshEntity(book);
 
@@ -189,16 +237,16 @@ public class BookStaffItem extends Item {
             long lastUse = COOLDOWN_MAP.get(uuid);
             long timePassed = System.currentTimeMillis() - lastUse;
 
-            // If the 60s have passed AND we haven't notified them yet
+
             if (timePassed >= MAZE_COOLDOWN && !NOTIFIED_READY.getOrDefault(uuid, false)) {
-                // Play a sound they can hear
+
                 player.level().playSound(null, player.getX(), player.getY(), player.getZ(),
                         SoundEvents.BOOK_PAGE_TURN, SoundSource.PLAYERS, 0.7f, 0.6f);
 
-                // Show the message
+
                 player.displayClientMessage(Component.literal("§d📖 The Great Library is ready!"), true);
 
-                // Mark as notified so it doesn't repeat every tick
+
                 NOTIFIED_READY.put(uuid, true);
             }
         }

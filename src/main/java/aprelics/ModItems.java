@@ -36,7 +36,8 @@ public class ModItems {
                 new VerdantHaloItem(props.stacksTo(1).component(DataComponents.EQUIPPABLE, Equippable.builder(EquipmentSlot.HEAD).build())));
 
         TYRANTS_ANKLET = registerItem("tyrants_anklet", props ->
-                new TyrantsAnkletItem(ArmorMaterials.COPPER, ArmorType.BOOTS, props));
+                new TyrantsAnkletItem(ArmorMaterials.COPPER, ArmorType.BOOTS,
+                        props.stacksTo(1).component(DataComponents.MAX_DAMAGE, null)));
 
         REAPERS_SCYTHE = registerItem("reapers_scythe", ReapersScytheItem::new);
 

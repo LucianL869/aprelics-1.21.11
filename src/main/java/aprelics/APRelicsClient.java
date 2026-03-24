@@ -1,7 +1,9 @@
 package aprelics;
 
 import aprelics.client.renderer.armor.TyrantsAnkletArmorRenderer;
+import aprelics.client.renderer.item.BookStaffRenderer;
 import aprelics.client.renderer.projectile.BookProjectileRenderer;
+import aprelics.items.BookStaffItem;
 import aprelics.items.TyrantsAnkletItem;
 import aprelics.client.renderer.armor.TyrantsAnkletArmorRenderer;
 import net.fabricmc.api.ClientModInitializer;
@@ -23,6 +25,7 @@ import net.minecraft.world.level.block.entity.BlockEntityType;
 import org.lwjgl.glfw.GLFW;
 import software.bernie.geckolib.animatable.client.GeoRenderProvider;
 import software.bernie.geckolib.renderer.GeoArmorRenderer;
+import software.bernie.geckolib.renderer.GeoItemRenderer;
 
 import java.util.function.BiConsumer;
 
@@ -42,9 +45,15 @@ public final class APRelicsClient implements ClientModInitializer {
 
         EntityRendererRegistry.register(ModEntities.BOOK_PROJECTILE, BookProjectileRenderer::new);
 
+
+
         RenderBridge.ankletProvider = () -> new GeoRenderProvider() {
             private GeoArmorRenderer<TyrantsAnkletItem, HumanoidRenderState> renderer;
 
+        };
+
+        RenderBridge.bookStaffProvider = () -> new GeoRenderProvider() {
+            private GeoItemRenderer<BookStaffItem> renderer;
         };
 
         ModEvents.register();
