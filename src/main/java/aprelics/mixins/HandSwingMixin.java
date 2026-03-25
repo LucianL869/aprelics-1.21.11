@@ -18,12 +18,11 @@ public class HandSwingMixin {
         ItemStack stack = player.getItemInHand(hand);
 
         if (stack.getItem() instanceof BookStaffItem staff) {
-            // Check if the player is NOT currently drawing the bow/using the item
-            // This prevents the maze from triggering during a right-click!
+
             if (!player.isUsingItem()) {
                 int mode = staff.getMode(stack);
 
-                // Trigger for BOTH Teleport (1) and Maze (2)
+
                 if (mode == 1 || mode == 2) {
                     staff.useSelectedAbility(player, stack);
                 }

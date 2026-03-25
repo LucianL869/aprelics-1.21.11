@@ -32,7 +32,7 @@ public class MazeTracker {
 
                 int descentTicks = 120; // 3 second slow descent
 
-                // 1. Start the Grinding Sound/Particle Loop for descent
+
                 new Thread(() -> {
                     for (int i = 0; i < descentTicks / 5; i++) {
                         level.getServer().execute(() -> {
@@ -45,18 +45,17 @@ public class MazeTracker {
                                         .forEach(p -> p.hurtClient(p.damageSources().generic()));
                             }
 
-                            // LOOP THROUGH EVERY PILLAR FOR SOUND/PARTICLES
-                            // This makes it sound "huge" like the rising phase
+
                             for (int y = 0; y < barrierPositions.size(); y++) {
                                 if (y % 5 == 0) { // Only the ground-level block
                                     BlockPos pos = barrierPositions.get(y);
 
-                                    // Warden Dust
+
                                     level.sendParticles(new BlockParticleOption(ParticleTypes.BLOCK, Blocks.DIRT.defaultBlockState()),
                                             pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5,
                                             4, 0.3, 0.1, 0.3, 0.02);
 
-                                    // Heavy friction sound at EVERY pillar (0.2f volume so it's not too loud)
+
                                     level.playSound(null, pos, SoundEvents.GRINDSTONE_USE, SoundSource.BLOCKS, 0.2f, 0.5f);
                                 }
                             }
@@ -65,7 +64,6 @@ public class MazeTracker {
                     }
                 }).start();
 
-                // 2. Trigger the Smooth Slide Down
                 level.getServer().execute(() -> {
                     for (UUID uuid : displayUUIDs) {
                         var entity = level.getEntity(uuid);
@@ -73,7 +71,7 @@ public class MazeTracker {
                             display.setTransformationInterpolationDuration(descentTicks);
                             display.setTransformationInterpolationDelay(0);
 
-                            // Slide down 5 blocks while keeping scale 1:1 to prevent "melting"
+
                             Transformation slideDown = new Transformation(
                                     new Vector3f(0, -5.0f, 0),
                                     null,
@@ -85,10 +83,10 @@ public class MazeTracker {
                     }
                 });
 
-                // Wait for the animation to finish
+
                 Thread.sleep(descentTicks * 50L);
 
-                // 3. Final Cleanup + "Ground Settling" Sound
+
                 level.getServer().execute(() -> {
                     if (!barrierPositions.isEmpty()) {
                         BlockPos center = barrierPositions.get(barrierPositions.size() / 2);

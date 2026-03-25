@@ -21,7 +21,7 @@ public class BookProjectile extends AbstractArrow implements ItemSupplier {
     }
 
     public BookProjectile(Level level, LivingEntity owner) {
-        // The 'ModEntities.BOOK_PROJECTILE' refers to the registration in step 2
+
         super(ModEntities.BOOK_PROJECTILE, owner, level, new ItemStack(Items.BOOK), null);
     }
 
@@ -46,16 +46,14 @@ public class BookProjectile extends AbstractArrow implements ItemSupplier {
         if (!this.level().isClientSide()) {
             ServerLevel serverLevel = (ServerLevel) this.level();
 
-            // 1. Play the "Book Landed" sound
-            // Using BOOK_PAGE_TURN with a lower pitch makes it sound like a "thud" of paper
+
             serverLevel.playSound(null, this.getX(), this.getY(), this.getZ(),
                     SoundEvents.BOOK_PAGE_TURN, SoundSource.PLAYERS, 1.0f, 0.8f);
 
-            // 2. Play a "Poof" sound (optional, for the magic effect)
+
             serverLevel.playSound(null, this.getX(), this.getY(), this.getZ(),
                     SoundEvents.ENCHANTMENT_TABLE_USE, SoundSource.PLAYERS, 0.5f, 1.2f);
 
-            // 3. Particles
             serverLevel.sendParticles(ParticleTypes.ENCHANT,
                     this.getX(), this.getY(), this.getZ(),
                     15, 0.2, 0.2, 0.2, 0.1);

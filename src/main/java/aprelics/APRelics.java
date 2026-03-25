@@ -65,8 +65,8 @@ public class APRelics implements ModInitializer {
         net.fabricmc.fabric.api.event.player.AttackBlockCallback.EVENT.register((player, world, hand, pos, direction) -> {
             ItemStack stack = player.getItemInHand(hand);
             if (stack.getItem() instanceof BookStaffItem && !world.isClientSide()) {
-                // This handles clicking blocks
-                return InteractionResult.PASS; // Let the Item class handle it
+
+                return InteractionResult.PASS;
             }
             return InteractionResult.PASS;
         });

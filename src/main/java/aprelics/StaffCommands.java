@@ -14,7 +14,6 @@ public class StaffCommands {
                     ServerLevel world = context.getSource().getLevel();
                     BlockPos pos = BlockPos.containing(context.getSource().getPosition());
 
-                    // Save to our tracker
                     StaffWarpTracker.X = pos.getX() + 0.5; // +0.5 centers them on the block
                     StaffWarpTracker.Y = pos.getY();
                     StaffWarpTracker.Z = pos.getZ() + 0.5;
