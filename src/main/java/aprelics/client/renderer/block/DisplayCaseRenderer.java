@@ -39,6 +39,15 @@ public class DisplayCaseRenderer extends GeoBlockRenderer<DisplayCaseEntity, Dis
         this.withRenderLayer(new BlockAndItemGeoLayer<DisplayCaseEntity, DisplayCaseRenderState>(this) {
 
 
+            @Override
+            protected List<RenderData> getRelevantBones(GeoRenderState renderState, BakedGeoModel model) {
+                return List.of();
+            }
+
+            @Override
+            public void addRenderData(GeoAnimatable animatable, @Nullable Object relatedObject, GeoRenderState renderState, float partialTick) {
+
+            }
 
             protected List<RenderData> getRelevantBones(DisplayCaseRenderState renderState, BakedGeoModel model) {
 
